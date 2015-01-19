@@ -1,0 +1,60 @@
+/*****
+ * Copyright (c) 2015, Stefan Reif
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without modification,
+ * are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ *****/
+
+/*
+ * mul-overflow.tg.vc
+ */
+#include "common.h"
+
+static void step(void)
+{
+	TYPE r0, r1, r2, r3, r4, r5, r6, r7, r8, r9;
+	int o = 0;
+
+	start();
+	o ^= overflow_mul(P0(MAX-1), P1(3), &r0);
+	o ^= overflow_mul(P0(MAX/3), P1(5), &r1);
+	o ^= overflow_mul(P0(2), P1(MAX-5), &r2);
+	o ^= overflow_mul(P0(7), P1(MAX/6), &r3);
+	o ^= overflow_mul(P0(8), P1(MAX/7), &r4);
+	o ^= overflow_mul(P0(9), P1(MAX/8), &r5);
+#ifdef SIGNED
+	o ^= overflow_mul(P0(MIN), P1(2), &r6);
+	o ^= overflow_mul(P0(MIN-1), P1(3), &r7);
+	o ^= overflow_mul(P0(MIN/2), P1(4), &r8);
+	o ^= overflow_mul(P0(MIN/3), P1(5), &r9);
+#else
+	o ^= overflow_mul(P0(20), P1(MAX/9), &r6);
+	o ^= overflow_mul(P0(31), P1(MAX/10), &r7);
+	o ^= overflow_mul(P0(42), P1(MAX/11), &r8);
+	o ^= overflow_mul(P0(53), P1(MAX/12), &r9);
+#endif
+	end();
+
+	effect(o);
+}
+

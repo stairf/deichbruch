@@ -1,0 +1,13 @@
+safe_iop.h
+
+overflow.h
+**.swp
+plots/**
+
+**.o
+**.d
+**/.*.tg
+**/.*.c
+**/.*-bin
+**/.*.data
+

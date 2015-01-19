@@ -1,0 +1,85 @@
+/*****
+ * Copyright (c) 2015, Stefan Reif
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without modification,
+ * are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ *****/
+
+#include "tgcommon.h"
+
+#define sub(a,b) check_sub(P0(a),P1(b))
+#define fail(a,b) fail_sub(P0(a),P1(b))
+
+int main(int argc, char **argv)
+{
+	sub(0, 0);
+	sub(1, 0);
+	sub(MAX, 0);
+	sub(MAX, 1);
+	sub(MAX, 2);
+	sub(MAX, MAX-1);
+	sub(MAX, MAX);
+	sub(MAX-1, 1);
+	sub(MAX-2, 0);
+	sub(MIN, 0);
+
+
+#ifdef SIGNED
+	sub(MIN, -1);
+	sub(MIN, -2);
+	sub(0, -MAX);
+	sub(0, MAX);
+	sub(1, MAX);
+	sub(-1, -MAX);
+	sub(-2, -MAX);
+	sub(MIN, -MAX);
+
+	if (IS_2_COMPLEMENT) {
+		sub(-MAX, 1);
+		sub(-1, MAX);
+		fail(-MAX, 2);
+		fail(-2, MAX);
+	}
+
+#endif
+
+	fail(MIN, 1);
+	fail(MIN, 2);
+	fail(MIN, MAX);
+
+#ifdef UNSIGNED
+	fail(0, 1);
+	fail(0, 2);
+	fail(0, MAX);
+	fail(1, 2);
+	fail(1, MAX);
+	fail(2, 3);
+	fail(MAX/2, MAX/2+1);
+	fail(MAX/2+1, MAX/2+2);
+	fail(MAX/2-1, MAX/2);
+	fail(MAX-1, MAX);
+#endif
+
+	return 0;
+}
+

@@ -1,0 +1,78 @@
+/*****
+ * Copyright (c) 2015, Stefan Reif
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without modification,
+ * are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ *****/
+
+/*
+ * matrix.tg.vc
+ */
+#include "common.h"
+
+#define N 4
+
+static void step(void)
+{
+	const TYPE m0[N*N] = {
+		P0(0),  P0(1),  P0(2), P0(3),
+		P0(4),  P0(5),  P0(6), P0(7),
+		P0(8),  P0(9),  P0(10), P0(11),
+		P0(12), P0(13), P0(14), P0(15)
+	};
+
+	const TYPE m1[N*N] = {
+		P1(12), P1(8),  P1(4), P1(0),
+		P1(13), P1(9),  P1(5), P1(1),
+		P1(14), P1(10), P1(6), P1(2),
+		P1(15), P1(11), P1(7), P1(3)
+	};
+
+	TYPE m2[N*N] = {0};
+
+	start();
+	for (int i = 0; i < N; ++i) {
+		for (int j = 0; j < N; ++j) {
+			for (int k = 0; k < N; ++k) {
+				// m2[i,j] += m0[i,k] * m1[k,j]
+				TYPE prod;
+				TYPE sum;
+				TYPE old;
+				if (overflow_mul(m0[i*N+k], m1[k*N+j], &prod))
+					abort();
+				old = m2[i*N+j];
+				if (overflow_add(old, prod, &sum))
+					abort();
+				m2[i*N+j] = sum;
+			}
+		}
+	}
+	end();
+
+	for (int i = 0; i < N; ++i) {
+		for (int j = 0; j < N; ++j) {
+			effect(m2[i*N+j]);
+		}
+	}
+}
+

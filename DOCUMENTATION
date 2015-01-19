@@ -1,0 +1,122 @@
+
+Deichbruch documentation
+========================
+
+This file contains the documentation of Deichbruch integer overflow detection
+macros.
+
+
+Namespaces
+----------
+
+Deichbruch uses the following namespaces:
+
+::
+	overflow_*
+		for the public interface
+
+	OVERFLOW_*
+		for externally visible macros
+
+	overflow__*
+		for everything internal
+
+Do not rely on any of the overflow__* macros because they might change in
+future versions without any warning.
+
+
+Macros
+------
+
+::
+	bool overflow_add(TYPE a, TYPE b, TYPE *r)
+		Type-generic macro for addition. Note that both operands must have the
+		same type, and the result must be a pointer to that type. In concept,
+		the macro performs an addition with infinite precision, and then
+		truncates that result to the result type. The macro returns zero on
+		success, and non-zero when the truncated result is not equal to the
+		infinite-precision result. On success, the result of the operation is
+		stored in '*r'. When the macro returns a non-zero value, the contents of
+		'*r' are undefined.
+
+	bool overflow_sub(TYPE a, TYPE b, TYPE *r)
+		Similar to overflow_add, but for subtraction.
+
+	bool overflow_mul(TYPE a, TYPE b, TYPE *r)
+		Similar to overflow_add, but for multiplication.
+
+	bool overflow_add_i(int a, int b, int *r)
+		This macro is the same as overflow_add, but it is not type-generic. The data type is 'int'.
+
+	bool overflow_add_li(long a, long b, long *r)
+		This macro is the same as overflow_add_i, but the type is 'long'.
+
+	bool overflow_add_lli(long long a, long long b, long long *r)
+		This macro is the same as overflow_add_i, but the type is 'long long'.
+
+	bool overflow_add_u(unsigned int a, unsigned int b, unsigned int *r)
+		This macro is the same as overflow_add_i, but the type is 'unsigned int'
+
+	bool overflow_add_lu(unsigned long a, unsigned long b, unsigned long *r)
+		This macro is the same as overflow_add_i, but the type is 'unsigned long'.
+
+	bool overflow_add_llu(unsigned long long a, unsigned long long b, unsigned long long *r)
+		This macro is the same as overflow_add_i, but the type is 'unsigned long long'.
+
+	bool overflow_sub_i(int a, int b, int *r)
+		This macro is the same as overflow_sub, but it is not type-generic. The data type is 'int'.
+
+	bool overflow_sub_li(long a, long b, long *r)
+		This macro is the same as overflow_sub_i, but the type is 'long'.
+
+	bool overflow_sub_lli(long long a, long long b, long long *r)
+		This macro is the same as overflow_sub_i, but the type is 'long long'.
+
+	bool overflow_sub_u(unsigned int a, unsigned int b, unsigned int *r)
+		This macro is the same as overflow_sub_i, but the type is 'unsigned int'
+
+	bool overflow_sub_lu(unsigned long a, unsigned long b, unsigned long *r)
+		This macro is the same as overflow_sub_i, but the type is 'unsigned long'.
+
+	bool overflow_sub_llu(unsigned long long a, unsigned long long b, unsigned long long *r)
+		This macro is the same as overflow_sub_i, but the type is 'unsigned long long'.
+
+	bool overflow_mul_i(int a, int b, int *r)
+		This macro is the same as overflow_mul, but it is not type-generic. The data type is 'int'.
+
+	bool overflow_mul_li(long a, long b, long *r)
+		This macro is the same as overflow_mul_i, but the type is 'long'.
+
+	bool overflow_mul_lli(long long a, long long b, long long *r)
+		This macro is the same as overflow_mul_i, but the type is 'long long'.
+
+	bool overflow_mul_u(unsigned int a, unsigned int b, unsigned int *r)
+		This macro is the same as overflow_mul_i, but the type is 'unsigned int'
+
+	bool overflow_mul_lu(unsigned long a, unsigned long b, unsigned long *r)
+		This macro is the same as overflow_mul_i, but the type is 'unsigned long'.
+
+	bool overflow_mul_llu(unsigned long long a, unsigned long long b, unsigned long long *r)
+		This macro is the same as overflow_mul_i, but the type is 'unsigned long long'.
+
+
+Configuration
+-------------
+
+Deichbruch allows a minimal configuration using preprocessor macros.
+
+::
+	OVERFLOW_LAZY_GENERIC
+		Do not raise a compiler warning when type-generic macros are not
+		supported. Then, it is possible that the Deichbruch header file does
+		not define the following macros:
+
+		- overflow_add
+		- overflow_sub
+		- overflow_mul
+
+		See above for a detailled description of the macros. You can still use
+		the non-generic macros with type suffix.
+
+Future versions might support more configuration variables.
+

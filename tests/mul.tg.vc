@@ -1,0 +1,152 @@
+/*****
+ * Copyright (c) 2015, Stefan Reif
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without modification,
+ * are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ *****/
+
+#include "tgcommon.h"
+
+#define mul(x,y) check_mul(P0(x),P1(y))
+#define fail(x,y) fail_mul(P0(x),P1(y))
+
+int main(int argc, char **argv)
+{
+	mul(0, 0);
+	mul(1, 0);
+	mul(0, 1);
+	mul(2, 3);
+	mul(3, 2);
+	mul(0, MAX);
+	mul(MAX, 0);
+	mul(0, MIN);
+	mul(MIN, 0);
+	mul(1, MAX);
+	mul(MAX, 1);
+	mul(1, MIN);
+	mul(MIN, 1);
+
+
+	mul(MAX/2, 2);
+	mul(2, MAX/2);
+	mul(MIN/2, 2);
+	mul(2, MIN/2);
+
+#ifdef SIGNED
+
+	mul(0, -1);
+	mul(-1, 0);
+	mul(1, -1);
+	mul(-1, 0);
+	mul(2, -1);
+	mul(-1, 2);
+	mul(2, -2);
+	mul(-2, 2);
+	mul(-3, 3);
+	mul(3, -3);
+	mul(MAX, -1);
+	mul(-1, MAX);
+	mul(MAX/2, -2);
+	mul(-2, MAX/2);
+	mul(MAX/4, -4);
+	mul(-4, MAX/4);
+	mul(-MAX, -1);
+	mul(-1, -MAX);
+	mul(-2, -MAX/2);
+	mul(-MAX/2, -2);
+
+	if (IS_2_COMPLEMENT) {
+		fail(MIN, -1);
+		fail(-1, MIN);
+		fail(MIN/2, -2);
+		fail(-2, MIN/2);
+	}
+	fail(MAX, -2);
+	fail(-2, MAX);
+	fail(MAX, -3);
+	fail(-3, MAX);
+	fail(MAX/4, -5);
+	fail(-5, MAX/4);
+	fail(MIN/8, 16);
+	fail(16, MIN/8);
+	fail(MIN/8, 32);
+	fail(32, MIN/8);
+	fail(MIN/8, 64);
+	fail(64, MIN/8);
+	fail(MIN/16, 32);
+	fail(32, MIN/16);
+	fail(MIN/32, 33);
+	fail(33, MIN/32);
+	fail(MIN/32, 34);
+	fail(34, MIN/32);
+	fail(MIN/32, 36);
+	fail(36, MIN/32);
+	fail(MIN/32, 40);
+	fail(40, MIN/32);
+	fail(MIN/32, 48);
+	fail(48, MIN/32);
+	fail(MIN/32, 64);
+	fail(64, MIN/32);
+#endif
+
+	fail(MAX/2+1, 2);
+	fail(2, MAX/2+1);
+	fail(MAX/2, 3);
+	fail(3, MAX/2);
+	fail(MAX-1, 2);
+	fail(2, MAX-1);
+	fail(MAX/2, MAX/2);
+	fail(MAX-1, MAX/2);
+	fail(MAX/2, MAX-1);
+	fail(MAX/4, 5);
+	fail(5, MAX/4);
+	fail(MAX/4, 6);
+	fail(6, MAX/4);
+	fail(MAX/4, 7);
+	fail(7, MAX/4);
+	fail(MAX/4, 8);
+	fail(8, MAX/4);
+	fail(MAX/8, 16);
+	fail(16, MAX/8);
+	fail(MAX/8, 32);
+	fail(32, MAX/8);
+	fail(MAX/8, 64);
+	fail(64, MAX/8);
+	fail(MAX/16, 32);
+	fail(32, MAX/16);
+	fail(MAX/32, 33);
+	fail(33, MAX/32);
+	fail(MAX/32, 34);
+	fail(34, MAX/32);
+	fail(MAX/32, 36);
+	fail(36, MAX/32);
+	fail(MAX/32, 40);
+	fail(40, MAX/32);
+	fail(MAX/32, 48);
+	fail(48, MAX/32);
+	fail(MAX/32, 64);
+	fail(64, MAX/32);
+
+	return 0;
+}
+
