@@ -733,7 +733,9 @@ sub dump_mul_for_type {
 	#else /* overflow__strategy_default */
 	@);
 		print_code($indent, qq @
-		#	if ((a_is_const && b_is_const) || (a_is_const && a > 0 && overflow__is_pow2(a)) || (b_is_const && b > 0 && overflow__is_pow2(b)))
+		#	if ((a_is_const && !a) || (b_is_const && !b))
+		#		return (*r = ($type->{ctype}) 0, 0);
+		#	else if ((a_is_const && b_is_const) || (a_is_const && a > 0 && overflow__is_pow2(a)) || (b_is_const && b > 0 && overflow__is_pow2(b)))
 		#		return overflow__check_mul_$type->{sfx}_strategy_precheck(a, b, r, a_is_const, b_is_const);
 		@);
 		for my $largetype (grep { $_->{signed} == $type->{signed} && $_->{size} > $type->{size} } @types) {
