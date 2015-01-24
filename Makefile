@@ -79,7 +79,7 @@ LATEX    = pdflatex </dev/null -interaction=nonstopmode
 CFLAGS  += $(OPTIMIZE) $(WARN)
 
 TGSFX = i u li lu lli llu
-STRAT = default precheck largetype partial
+STRAT = default precheck postcheck largetype partial
 VC    = cc cv vc vv
 
 ifneq "$(strip $(wildcard safe_iop.h))" ""

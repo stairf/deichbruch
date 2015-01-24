@@ -284,6 +284,23 @@ sub dump_add_for_type {
 		print "\n";
 	}
 
+	if (!$type->{signed}) {
+		print_code($indent, qq @
+		#overflow__private overflow__nonnull_arg(3) overflow__must_check
+		#int overflow__add_$type->{sfx}_strategy_postcheck($type->{ctype} a, $type->{ctype} b, $type->{ctype} *r, int a_is_const, int b_is_const)
+		#{
+		#	(void) a_is_const;
+		#	(void) b_is_const;
+		#	$type->{ctype} r1 = a + b;
+		#	if (r1 < a)
+		#		return 1;
+		#	*r = r1;
+		#	return 0;
+		#}
+		@);
+		print "\n";
+	}
+
 	print_code($indent, qq @
 	#overflow__private overflow__nonnull_arg(3) overflow__must_check
 	#int overflow__add_$type->{sfx}_internal($type->{ctype} a, $type->{ctype} b, $type->{ctype} *r, int a_is_const, int b_is_const)
@@ -320,6 +337,14 @@ sub dump_add_for_type {
 		print_code($indent, qq @
 		#	return !sop_add(r, a, b);
 		@);
+	if (!$type->{signed}) {
+		print_pp($indent, qq @
+		#elif defined overflow__strategy_postcheck
+		@);
+			print_code($indent, qq @
+			#	return overflow__add_$type->{sfx}_strategy_postcheck(a, b, r, a_is_const, b_is_const);
+			@);
+	}
 	print_pp($indent, qq @
 	#else /* overflow__strategy_default */
 	@);
@@ -386,6 +411,22 @@ sub dump_sub_for_type {
 	@);
 	print "\n";
 
+	if (!$type->{signed}) {
+		print_code($indent, qq @
+		#overflow__private overflow__nonnull_arg(3) overflow__must_check
+		#int overflow__sub_$type->{sfx}_strategy_postcheck($type->{ctype} a, $type->{ctype} b, $type->{ctype} *r, int a_is_const, int b_is_const)
+		#{
+		#	(void) a_is_const;
+		#	(void) b_is_const;
+		#	$type->{ctype} r1 = a - b;
+		#	if (r1 > a)
+		#		return 1;
+		#	*r = r1;
+		#	return 0;
+		#}
+		@);
+	}
+
 	for my $largetype (grep { $_->{signed} == $type->{signed} && $_->{size} > $type->{size} } @types) {
 		print_code($indent, qq @
 		#overflow__private overflow__nonnull_arg(3) overflow__must_check
@@ -428,6 +469,14 @@ sub dump_sub_for_type {
 		print_code($indent, qq @
 		#	return overflow__sub_$type->{sfx}_strategy_precheck(a, b, r, a_is_const, b_is_const);
 		@);
+	if (!$type->{signed}) {
+		print_pp($indent, qq @
+		#elif defined overflow__strategy_postcheck
+		@);
+			print_code($indent, qq @
+			#	return overflow__sub_$type->{sfx}_strategy_postcheck(a, b, r, a_is_const, b_is_const);
+			@);
+	}
 	print_pp($indent, qq @
 	#elif defined overflow__strategy_largetype
 	@);
@@ -606,6 +655,28 @@ sub dump_mul_for_type {
 		#}
 		@);
 		print "\n";
+
+		print_code($indent, qq @
+		#overflow__private overflow__nonnull_arg(3) overflow__must_check
+		#int overflow__check_mul_$type->{sfx}_strategy_postcheck($type->{ctype} a, $type->{ctype} b, $type->{ctype} *r, int a_is_const, int b_is_const)
+		#{
+		#	if ((a_is_const && !a) || (b_is_const && !b)) {
+		#		*r = 0;
+		#		return 0;
+		#	}
+		#	$type->{ctype} r1 = a * b;
+		#	if (a_is_const) {
+		#		if (a && r1 / a != b)
+		#			return 1;
+		#	} else {
+		#		if (b && r1 / b != a)
+		#			return 1;
+		#	}
+		#	*r = r1;
+		#	return 0;
+		#}
+		@);
+		print "\n";
 	}
 
 	print_code($indent, qq @
@@ -619,6 +690,14 @@ sub dump_mul_for_type {
 		print_code($indent, qq @
 		#	return overflow__check_mul_$type->{sfx}_strategy_precheck(a, b, r, a_is_const, b_is_const);
 		@);
+	if (!$type->{signed}) {
+		print_pp($indent, qq @
+		#elif defined overflow__strategy_postcheck
+		@);
+			print_code($indent, qq @
+			#	return overflow__check_mul_$type->{sfx}_strategy_postcheck(a, b, r, a_is_const, b_is_const);
+			@);
+	}
 	print_pp($indent, qq @
 	#elif defined overflow__strategy_largetype
 	@);
