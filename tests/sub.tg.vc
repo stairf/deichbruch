@@ -37,12 +37,16 @@ int main(int argc, char **argv)
 	sub(MAX, 0);
 	sub(MAX, 1);
 	sub(MAX, 2);
+	sub(MAX, MAX-2);
 	sub(MAX, MAX-1);
 	sub(MAX, MAX);
 	sub(MAX-1, 1);
 	sub(MAX-2, 0);
+	sub(MAX-2, 1);
 	sub(MIN, 0);
-
+	sub(MIN, MIN);
+	sub(MIN+1, MIN);
+	sub(MIN+2, MIN);
 
 #ifdef SIGNED
 	sub(MIN, -1);
@@ -53,19 +57,40 @@ int main(int argc, char **argv)
 	sub(-1, -MAX);
 	sub(-2, -MAX);
 	sub(MIN, -MAX);
+	sub(MAX-1, MAX);
+	sub(MAX-2, MAX);
+	sub(MIN+MAX, MAX);
+	sub(MIN+MAX+1, MAX);
+	sub(MIN+MAX, MAX-1);
 
 	if (IS_2_COMPLEMENT) {
 		sub(-MAX, 1);
 		sub(-1, MAX);
+		sub(-1, MIN);
+		sub(-1, MIN+1);
+		sub(0, MIN+1);
 		fail(-MAX, 2);
 		fail(-2, MAX);
+		fail(0, MIN);
+		fail(1, MIN+1);
+		fail(2, MIN+2);
+		fail(MAX-2, MIN+MAX-2);
+		fail(MAX-1, MIN+MAX-1);
+		fail(MAX, MIN+MAX);
 	}
-
+	fail(1, -MAX);
+	fail(2, -MAX);
+	fail(MAX-1, -MAX);
+	fail(MAX, -MAX);
 #endif
 
 	fail(MIN, 1);
 	fail(MIN, 2);
+	fail(MIN, MAX-1);
 	fail(MIN, MAX);
+	fail(MIN+1, 2);
+	fail(MIN+2, 3);
+	fail(MIN+2, MAX);
 
 #ifdef UNSIGNED
 	fail(0, 1);
