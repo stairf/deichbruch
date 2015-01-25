@@ -215,11 +215,11 @@ $$(CDIR)/.%-$(1:%=%).d: $$(CDIR)/%.c
 	@echo "DEP  [C]  $$< -> $1"
 	$$Q $$(CC) $$($(1:%=CFLAGS_%)) $$(DEPGEN) $$<
 
-$$(TDIR:%=%)/%-bin: $$(TDIR:%=%)/%.o $$($(1:%=COBJ_%))
+$$($(1:%=TBIN_%)): $$(TDIR:%=%)/%-bin: $$(TDIR:%=%)/%.o $$($(1:%=COBJ_%))
 	@echo "LD   [T]  $$@"
 	$$Q $$(LD) $$(LDFLAGS) -o $$@ $$^ $$(LIBS)
 
-$$(BDIR:%=%)/%-bin: $$(BDIR:%=%)/%.o $$($(1:%=COBJ_%))
+$$($(1:%=BBIN_%)): $$(BDIR:%=%)/%-bin: $$(BDIR:%=%)/%.o $$($(1:%=COBJ_%))
 	@echo "LD   [B]  $$@"
 	$$Q $$(LD) $$(LDFLAGS) -o $$@ $$^ $$(LIBS)
 
