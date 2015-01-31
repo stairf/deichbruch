@@ -114,12 +114,12 @@ sub dump_common_macros {
 	#		define overflow__private static inline __attribute__((__unused__))
 	#	endif
 	#elif defined __GNUC__
-	#	if __GNUC__ > 2 || (__GNUC__ == 2 && __GNUC_MINOR__ >= 7)
-	#		define overflow__private static inline __attribute__((__unused__))
+	#	if __GNUC__ >= 4 /* TODO */
+	#		define overflow__private static inline __attribute__((__always_inline__,__unused__,__artificial__))
 	#	elif __GNUC__ > 3 || (__GNUC__ == 3 && __GNUC_MINOR__ >= 1)
 	#		define overflow__private static inline __attribute__((__always_inline__,__unused__))
-	#	elif __GNUC__ >= 4 /* TODO */
-	#		define overflow__private static inline __attribute__((__always_inline__,__unused__,__artificial__))
+	#	elif __GNUC__ > 2 || (__GNUC__ == 2 && __GNUC_MINOR__ >= 7)
+	#		define overflow__private static inline __attribute__((__unused__))
 	#	endif
 	#endif
 
