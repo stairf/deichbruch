@@ -455,8 +455,8 @@ sub dump_sub_for_type {
 		#	return 0;
 		#}
 		@);
+		print "\n";
 	}
-	print "\n";
 
 	print_code($indent, qq @
 	#overflow__private overflow__nonnull_arg(3) overflow__must_check
