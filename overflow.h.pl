@@ -144,7 +144,7 @@ sub dump_common_macros {
 	#	define overflow__private static inline
 	#endif
 
-	#ifndef __OPTIMIZE__
+	#ifdef __OPTIMIZE__
 	#	if defined __clang__
 	#		if __has_builtin(__builtin_unreachable)
 	#			define overflow__assume(x) do { if (!(x)) __builtin_unreachable(); } while (0)
