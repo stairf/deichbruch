@@ -97,6 +97,23 @@ sub dump_use_builtins {
 	}
 }
 
+sub dump_try_builtin {
+	my ($indent, $type, $opname) = @_;
+	my $asm = ($type->{signed} ? "s" : "u") . $opname . ($type->{sfx} =~ s/[ui]$//r);
+	print_pp($indent, qq @
+	#if defined __clang__
+	#	if __has_builtin(__builtin_${asm}_overflow)
+	#		define overflow_${opname}_$type->{sfx}(a, b, r) __builtin_${asm}_overflow((a), (b), (r))
+	#	endif
+	#elif defined __GNUC__
+	#	if __GNUC__ >= 5
+	#		define overflow_${opname}_$type->{sfx}(a, b, r) __builtin_${asm}_overflow((a), (b), (r))
+	#	endif
+	#endif
+	@);
+	print "\n";
+}
+
 sub dump_common_macros {
 	my ($indent) = @_;
 	print_pp($indent, qq @
@@ -208,11 +225,11 @@ sub dump_common_macros {
 	#include <stdint.h>
 	#include <limits.h>
 	@);
+	print "\n";
 }
 
-sub dump_add_for_type {
+sub dump_custom_add {
 	my ($indent, $type) = @_;
-	print "\n";
 	print_code($indent, qq @
 	#overflow__private overflow__nonnull_arg(3) overflow__must_check
 	#int overflow__add_$type->{sfx}_strategy_precheck($type->{ctype} a, $type->{ctype} b, $type->{ctype} *r, int a_is_const, int b_is_const)
@@ -370,9 +387,13 @@ sub dump_add_for_type {
 	@);
 	print "\n";
 
+	print_pp($indent, qq @
+	#define overflow_add_$type->{sfx}(a, b, r) overflow__add_$type->{sfx}_internal((a), (b), (r), overflow__constant(a), overflow__constant(b))
+	@);
+	print "\n";
 }
 
-sub dump_sub_for_type {
+sub dump_custom_sub {
 	my ($indent, $type) = @_;
 	print_code($indent, qq @
 	#overflow__private overflow__nonnull_arg(3) overflow__must_check
@@ -530,9 +551,14 @@ sub dump_sub_for_type {
 	#}
 	@);
 	print "\n";
+
+	print_pp($indent, qq @
+	#define overflow_sub_$type->{sfx}(a, b, r) overflow__sub_$type->{sfx}_internal((a), (b), (r), overflow__constant(a), overflow__constant(b))
+	@);
+	print "\n";
 }
 
-sub dump_mul_for_type {
+sub dump_custom_mul {
 	my ($indent, $type) = @_;
 	print_code($indent, qq @
 	#overflow__private overflow__nonnull_arg(3) overflow__must_check
@@ -764,6 +790,50 @@ sub dump_mul_for_type {
 	#}
 	@);
 	print "\n";
+
+	print_pp($indent, qq @
+	#define overflow_mul_$type->{sfx}(a, b, r) overflow__mul_$type->{sfx}_internal((a), (b), (r), overflow__constant(a), overflow__constant(b))
+	@);
+	print "\n";
+}
+
+sub dump_add_for_type {
+	my ($indent, $type) = @_;
+	dump_try_builtin($indent, $type, "add");
+	print_pp($indent, qq @
+	#ifndef overflow_add_$type->{sfx}
+	@);
+	dump_custom_add($indent . "\t", $type);
+	print_pp($indent, qq @
+	#endif /* overflow_add_$type->{sfx} */
+	@);
+	print "\n";
+}
+
+sub dump_sub_for_type {
+	my ($indent, $type) = @_;
+	dump_try_builtin($indent, $type, "sub");
+	print_pp($indent, qq @
+	#ifndef overflow_sub_$type->{sfx}
+	@);
+	dump_custom_sub($indent . "\t", $type);
+	print_pp($indent, qq @
+	#endif /* overflow_sub_$type->{sfx} */
+	@);
+	print "\n";
+}
+
+sub dump_mul_for_type {
+	my ($indent, $type) = @_;
+	dump_try_builtin($indent, $type, "mul");
+	print_pp($indent, qq @
+	#ifndef overflow_mul_$type->{sfx}
+	@);
+	dump_custom_mul($indent . "\t", $type);
+	print_pp($indent, qq @
+	#endif /* overflow_mul_$type->{sfx} */
+	@);
+	print "\n";
 }
 
 sub dump_add {
@@ -783,18 +853,20 @@ sub dump_mul {
 
 sub dump_generic {
 	my ($indent, $op) = @_;
-	for my $t (@types) {
-		print_pp($indent, qq @
-		#ifndef overflow_$op->{name}_$t->{sfx}
-		#	define overflow_$op->{name}_$t->{sfx}(a, b, r) overflow__$op->{name}_$t->{sfx}_internal((a),(b),(r), overflow__constant(a), overflow__constant(b))
-		#endif
-		@);
-		print "\n";
-	}
+	#for my $t (@types) {
+	#	print_pp($indent, qq @
+	#	#ifndef overflow_$op->{name}_$t->{sfx}
+	#	#	define overflow_$op->{name}_$t->{sfx}(a, b, r) overflow__$op->{name}_$t->{sfx}_internal((a),(b),(r), overflow__constant(a), overflow__constant(b))
+	#	#endif
+	#	@);
+	#	print "\n";
+	#}
 	print_pp($indent, qq @
 	#ifndef overflow_$op->{name}
 	#	if defined __clang__
-	#		if __has_builtin(__builtin_choose_expr) && __has_builtin(__builtin_types_compatible_p)
+	#		if __has_builtin(__builtin_$op->{name}_overflow)
+	#			define overflow_$op->{name}(a, b, r) __builtin_$op->{name}_overflow((a), (b), (r))
+	#		elif __has_builtin(__builtin_choose_expr) && __has_builtin(__builtin_types_compatible_p)
 	#			define overflow_$op->{name}(a,b,r) \\
 	@);
 	print $indent . "\t\t\t\t__builtin_choose_expr(__builtin_types_compatible_p(__typeof__(*(r)), $_->{ctype}), \\\n$indent\t\t\t\t\toverflow_$op->{name}_$_->{sfx}((a),(b),($_->{ctype} *) (r)), \\\n" for @types;
@@ -804,7 +876,9 @@ sub dump_generic {
 	print_pp($indent, qq @
 	#		endif
 	#	elif defined __GNUC__
-	#		if __GNUC__ >= 4 /* TODO  */
+	#		if __GNUC__ >= 5
+	#			define overflow_$op->{name}(a, b, r) __builtin_$op->{name}_overflow((a), (b), (r))
+	#		elif __GNUC__ >= 4 /* TODO  */
 	#			define overflow_$op->{name}(a,b,r) \\
 	@);
 	print $indent . "\t\t\t\t__builtin_choose_expr(__builtin_types_compatible_p(__typeof__(*(r)), $_->{ctype}), \\\n$indent\t\t\t\t\toverflow_$op->{name}_$_->{sfx}((a),(b),($_->{ctype} *)(r)), \\\n" for @types;
@@ -816,15 +890,6 @@ sub dump_generic {
 	#endif
 	@);
 	print "\n";
-}
-
-sub dump_custom {
-	my ($indent) = @_;
-	dump_common_macros($indent);
-	dump_add($indent);
-	dump_sub($indent);
-	dump_mul($indent);
-	dump_generic($indent, $_) for @ops;
 }
 
 sub dump_file_header {
@@ -851,18 +916,12 @@ sub dump_file_body {
 	print "#ifndef __OVERFLOW_H_INCLUDED__\n";
 	print "#define __OVERFLOW_H_INCLUDED__ 1\n\n";
 
-	print "#if defined __clang__\n";
-	print "#\tif __has_builtin(__builtin_add_overflow)\n";
-	dump_use_builtins("\t\t");
-	print "#\tendif\n";
-	print "#elif defined __GNUC__\n";
-	print "#\tif __GNUC__ >= 5\n";
-	dump_use_builtins("\t\t");
-	print "#\tendif\n";
-	print "#endif\n";
-
-	print "\n";
-	dump_custom("");
+	my $indent = "";
+	dump_common_macros($indent);
+	dump_add($indent);
+	dump_sub($indent);
+	dump_mul($indent);
+	dump_generic($indent, $_) for @ops;
 
 	print "\n";
 	print "#ifndef OVERFLOW_LAZY_GENERIC\n\n";
