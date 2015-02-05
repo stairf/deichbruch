@@ -231,37 +231,34 @@ $(foreach S, $(STRAT), $(eval $(call STRATEGY_TEMPLATE, $S)))
 TEX =
 # usage: $(eval $(call PLOT_TEMPLATE_STRAT, benchmark, type)
 define PLOT_TEMPLATE_STRAT
-
 $$(PDIR)/$(1:%=%)-$(2:%=%).tex: $$(foreach V, $$(VC), $$(foreach S, $$(STRAT), $$(BDIR:%=%)/...$$(V:%=%)-$(1:%=%)-$(2:%=%)-$$(S:%=%).data)) | $$(PDIR)
 	@echo "PLOT      $$(@:%=%)"
 	$$Q $$(PERL) scripts/plot.pl --strat $$@ $$^
 
-##$$(PDIR)/$(1:%=%)-$(2:%=%).pdf: $$(PDIR)/$(1:%=%)-$(2:%=%).tex
-##	@echo "LATEX     $$(@:%=%)"
-##	$$Q $$(LATEX) -output-directory $$(PDIR) $$< </dev/null
-
 TEX += $(PDIR)/$(1:%=%)-$(2:%=%).tex
-##PLOT += $(PDIR)/$(1:%=%)-$(2:%=%).pdf
 endef
 
-# usage: $(eval $(call PLOT_TEMPLATE_STRAT, benchmark, strat)
+# usage: $(eval $(call PLOT_TEMPLATE_TYPES, benchmark, strat)
 define PLOT_TEMPLATE_TYPES
-
-$$(PDIR)/$(1:%=%)-$(2:%=%).tex: $$(foreach V, $$(VC), $$(foreach S, $$(TGSFX), $$(BDIR:%=%)/...$$(V:%=%)-$(1:%=%)-$$(S:%=%)-$(2:%=%).data)) | $$(PDIR)
-	@echo "TEX        $$(@:%=%)"
+$$(PDIR)/$(1:%=%)-$(2:%=%).tex: $$(foreach V, $$(VC), $$(foreach T, $$(TGSFX), $$(BDIR:%=%)/...$$(V:%=%)-$(1:%=%)-$$(T:%=%)-$(2:%=%).data)) | $$(PDIR)
+	@echo "PLOT      $$(@:%=%)"
 	$$Q $$(PERL) scripts/plot.pl --type $$@ $$^
 
-##$$(PDIR)/$(1:%=%)-$(2:%=%).pdf: $$(PDIR)/$(1:%=%)-$(2:%=%).tex
-##	@echo "LATEX      $$(@:%=%)"
-##	$$Q $$(LATEX) -output-directory $$(PDIR) $$<
+TEX += $(PDIR)/$(1:%=%)-$(2:%=%).tex
+endef
+
+# usage: $(eval $(call PLOT_TEMPLATE_BENCH, type, strat)
+define PLOT_TEMPLATE_BENCH
+$$(PDIR)/$(1:%=%)-$(2:%=%).tex: $$(foreach V, $$(VC), $$(foreach B, $$(BENCHMARKS), $$(BDIR:%=%)/...$$(V:%=%)-$$(B:%=%)-$(1:%=%)-$(2:%=%).data)) | $$(PDIR)
+	@echo "PLOT      $$(@:%=%)"
+	$$Q $$(PERL) scripts/plot.pl --bench $$@ $$^
 
 TEX += $(PDIR)/$(1:%=%)-$(2:%=%).tex
-##PLOT += $(PDIR)/$(1:%=%)-$(2:%=%).pdf
 endef
 
 $(foreach B, $(BENCHMARKS), $(foreach T, $(TGSFX), $(eval $(call PLOT_TEMPLATE_STRAT, $B, $T))))
-# TODO: integration into result.pdf
-#$(foreach B, $(BENCHMARKS), $(foreach S, $(STRAT), $(eval $(call PLOT_TEMPLATE_TYPES, $B, $S))))
+$(foreach B, $(BENCHMARKS), $(foreach S, $(STRAT), $(eval $(call PLOT_TEMPLATE_TYPES, $B, $S))))
+$(foreach T, $(TGSFX), $(foreach S, $(STRAT), $(eval $(call PLOT_TEMPLATE_BENCH, $T, $S))))
 
 $(PDIR:%=%)/result.tex: $(TEX)
 	@echo "COMB      $@"

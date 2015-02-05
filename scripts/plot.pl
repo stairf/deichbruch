@@ -30,16 +30,23 @@ use warnings;
 use strict;
 
 my $what = shift;
-my $other = (grep { $_ ne $what }("strat", "type"))[0];
+$what =~ s/^--//;
+my $const1 = (grep { $_ ne $what }("bench", "strat", "type"))[0];
+my $const2 = (grep { $_ ne $what }("bench", "strat", "type"))[1];
 my $outfile = shift;
 
 my $IMAGEH = 20;
+my $IMAGEW = 25;
 
 my @data;
 
 my %lang = (
-	'strat' => "strategies",
-	'type' => "types",
+	'_bench' => "benchmarks",
+	'_strat' => "strategies",
+	'_type' => "types",
+	'bench' => "benchmark",
+	'strat' => "strategy",
+	'type' => "type",
 	'i' => "int",
 	'li' => "long",
 	'lli' => "long long",
@@ -54,12 +61,12 @@ while (defined (my $filename = shift)) {
 	if ($filename =~ m,benchmarks/\.\.\.(\w+)-([a-zA-Z0-9_-]+)-(\w+)-(\w+)\.data,) {
 		#print STDERR "OK: $filename\n";
 		my $vc = $1;
-		my $tc = $2;
+		my $bench = $2;
 		my $type = $3;
 		my $strat = $4;
 		my $plain = `cat $filename`;
 		my ($val, $min, $max) = split /[ \n\t]+/, $plain;
-		push @data, { vc => $vc, tc => $tc, type => $type, strat => $strat, val => $val, min => $min, max => $max};
+		push @data, { vc => $vc, bench => $bench, type => $type, strat => $strat, val => $val, min => $min, max => $max};
 		#print $out "$i $val \"$vc\" \"$strat\"\n";
 	} else {
 		print STDERR "bad file name format: $filename\n";
@@ -70,7 +77,6 @@ while (defined (my $filename = shift)) {
 my %seen;
 my @vc = sort grep { !$seen{$_}++ } map { $_->{vc} } @data;
 %seen = ();
-$what =~ s/^--//;
 my @strat = sort grep { !$seen{$_}++ } map { $_->{$what} } @data;
 
 my $max = (reverse sort {$a<=>$b} map {$_->{max}} @data)[0];
@@ -96,6 +102,14 @@ open my $out, ">$outfile" or die "$outfile: $!\n";
 #print STDERR "WRITE TO: $outfile\n";
 
 my $any = $data[0];
+my $whats = "_$what";
+$lang{$what} //= $what;
+$lang{$const1} //= $const1;
+$lang{$const2} //= $const2;
+$lang{$any->{$const1}} //= $any->{$const1};
+$lang{$any->{$const2}} //= $any->{$const2};
+
+my $IMAGESCALE = 0.5 * $IMAGEW / ((scalar @strat + 1 ) * scalar @vc);
 #for my $d (@data) {
 #	print $out qq @
 #	\\documentclass[tikz,border=1cm]{standalone}
@@ -109,8 +123,8 @@ my $any = $data[0];
 #		\\tikzset{brace/.style={thick,decorate,decoration={brace,amplitude=5pt}}};
 #	@;
 	print $out qq @
-	\\section{Comparison of different \\textit{ $lang{$what} } in the \\texttt{ $any->{tc} } benchmark of type \\texttt{ $lang{$any->{type}} } }
-	\\begin{tikzpicture}[scale=0.5]
+	\\section{Comparison of different \\textit{ $lang{${whats}} } for $lang{$const1} \\texttt{ $lang{$any->{$const1}} } and $lang{$const2} \\texttt{ $lang{$any->{$const2}} } }
+	\\begin{tikzpicture}[scale=$IMAGESCALE]
 		\\tikzset{axis/.style={ultra thick,black}};
 		\\tikzset{bar/.style={draw=black}};
 		\\tikzset{error/.style={draw=black}};
@@ -153,9 +167,10 @@ my $any = $data[0];
 	my $y = 1 + $IMAGEH + scalar @strat;
 	my $shadow=0;
 	for my $strat (@strat) {
+		my $label = $lang{$strat} // $strat;
 		print $out qq @
 			\\draw[fill=black!$shadow] ($x,$y) rectangle ++(-1,1);
-			\\node[anchor=east] at (\$($x,$y)+(-1.5,0.5)\$) { \\textbf{$strat} };
+			\\node[anchor=east] at (\$($x,$y)+(-1.5,0.5)\$) { \\textbf{ $label } };
 		@;
 		$y--;
 		$shadow += 10;
