@@ -32,52 +32,39 @@
 
 static void step(void)
 {
-	TYPE r0, r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11, r12, r13, r14, r15, r16, r17, r18, r19;
-	int  o0, o1, o2, o3, o4, o5, o6, o7, o8, o9, o10, o11, o12, o13, o14, o15, o16, o17, o18, o19;
+	TYPE r0, r1, r2, r3, r4, r5, r6, r7, r8, r9;
+	int  o0, o1, o2, o3, o4, o5, o6, o7, o8, o9;
 	TYPE t = 0;
 
 	start();
-	o0  = overflow_add(P0(1), P1(2), &r0);
-	o1  = overflow_add(P0(2), P1(1), &r1);
-	o2  = overflow_add(P0(3), P1(2), &r2);
-	o3  = overflow_add(P0(2), P1(3), &r3);
-	o4  = overflow_add(P0(MAX-1), P1(1), &r4);
-	o5  = overflow_add(P0(1), P1(MAX-1), &r5);
-	o6  = overflow_add(P0(MAX-5), P1(3), &r6);
-	o7  = overflow_add(P0(3), P1(MAX-5), &r7);
-	o8  = overflow_add(P0(MIN), P1(MAX), &r8);
-	o9  = overflow_add(P0(MAX), P1(MIN), &r9);
-	o10 = overflow_add(P0(11), P1(MIN), &r10);
-	o11 = overflow_add(P0(MIN), P1(11), &r11);
-	o12 = overflow_add(P0(13), P1(MAX-17), &r12);
-	o13 = overflow_add(P0(MAX-17), P1(13), &r13);
+	o0 = overflow_add(P0(1), P1(2), &r0);
+	o1 = overflow_add(P0(3), P1(2), &r1);
+	o2 = overflow_add(P0(MAX-1), P1(1), &r2);
+	o3 = overflow_add(P0(MAX-5), P1(3), &r3);
+	o4 = overflow_add(P0(MIN), P1(MAX), &r4);
+	o5 = overflow_add(P0(11), P1(MIN), &r5);
+	o6 = overflow_add(P0(13), P1(MAX-17), &r6);
 #ifdef SIGNED
-	o14 = overflow_add(P0(-1), P1(MAX), &r14);
-	o15 = overflow_add(P0(MAX), P1(-1), &r15);
-	o16 = overflow_add(P0(MAX), P1(-11), &r16);
-	o17 = overflow_add(P0(-11), P1(MAX), &r17);
-	o18 = overflow_add(P0(-12), P1(-13), &r18);
-	o19 = overflow_add(P0(-13), P1(-12), &r19);
+	o7 = overflow_add(P0(-1), P1(MAX), &r7);
+	o8 = overflow_add(P0(MAX), P1(-11), &r8);
+	o9 = overflow_add(P0(-12), P1(-13), &r9);
 #else
-	o14 = overflow_add(P0(MAX/2), P1(MAX/3), &r14);
-	o15 = overflow_add(P0(MAX/3), P1(MAX/2), &r15);
-	o16 = overflow_add(P0(MAX/2), P1(3), &r16);
-	o17 = overflow_add(P0(3), P1(MAX/2), &r17);
-	o18 = overflow_add(P0(5), P1(MAX/2), &r18);
-	o19 = overflow_add(P0(2), P1(MAX/5), &r19);
+	o7 = overflow_add(P0(MAX/2), P1(MAX/3), &r7);
+	o8 = overflow_add(P0(MAX/2), P1(3), &r8);
+	o9 = overflow_add(P0(5), P1(MAX/2), &r9);
 #endif
 	end();
 
-	if (!o0)  t ^= r0;  if (!o1)  t |= r1;
-	if (!o2)  t ^= r2;  if (!o3)  t |= r3;
-	if (!o4)  t ^= r4;  if (!o5)  t |= r5;
-	if (!o6)  t ^= r6;  if (!o7)  t |= r7;
-	if (!o8)  t ^= r8;  if (!o9)  t |= r9;
-	if (!o10) t ^= r10; if (!o11) t |= r11;
-	if (!o12) t ^= r12; if (!o13) t |= r13;
-	if (!o14) t ^= r14; if (!o15) t |= r15;
-	if (!o16) t ^= r16; if (!o17) t |= r17;
-	if (!o18) t ^= r18; if (!o19) t |= r19;
+	if (!o0) t ^= r0;
+	if (!o1) t ^= r1;
+	if (!o2) t ^= r2;
+	if (!o3) t ^= r3;
+	if (!o4) t ^= r4;
+	if (!o5) t ^= r5;
+	if (!o6) t ^= r6;
+	if (!o7) t ^= r7;
+	if (!o8) t ^= r8;
+	if (!o9) t ^= r9;
 	effect(t);
 }
 

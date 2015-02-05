@@ -36,22 +36,33 @@ static void step(void)
 	int  o0, o1, o2, o3, o4, o5, o6, o7, o8, o9;
 	TYPE t = 0;
 
-	start();
-	o0 = overflow_add(P0(1), P1(2), &r0);
-	o1 = overflow_add(P0(1), P1(2), &r1);
-	o2 = overflow_add(P0(3), P1(2), &r2);
-	o3 = overflow_add(P0(3), P1(2), &r3);
-	o4 = overflow_add(P0(MAX-3), P1(2), &r4);
-	o5 = overflow_add(P0(MAX-3), P1(2), &r5);
-	o6 = overflow_add(P0(MAX), P1(MIN), &r6);
-	o7 = overflow_add(P0(MAX), P1(MIN), &r7);
+	const TYPE a0 = P0(1);
+	const TYPE a2 = P0(3);
+	const TYPE a4 = P0(MAX-3);
+	const TYPE a6 = P0(MAX);
+	const TYPE a8 = P0(3);
+
+	const TYPE b0 = P1(2);
+	const TYPE b2 = P1(2);
+	const TYPE b4 = P1(2);
+	const TYPE b6 = P1(MIN);
 #ifdef SIGNED
-	o8 = overflow_add(P0(3), P1(-5), &r8);
-	o9 = overflow_add(P0(3), P1(-5), &r9);
+	const TYPE b8 = P1(-5);
 #else
-	o8 = overflow_add(P0(3), P1(5), &r8);
-	o9 = overflow_add(P0(3), P1(5), &r9);
+	const TYPE b8 = P1(5);
 #endif
+
+	start();
+	o0 = overflow_add(a0, b0, &r0);
+	o1 = overflow_add(a0, b0, &r1);
+	o2 = overflow_add(a2, b2, &r2);
+	o3 = overflow_add(a2, b2, &r3);
+	o4 = overflow_add(a4, b4, &r4);
+	o5 = overflow_add(a4, b4, &r5);
+	o6 = overflow_add(a6, b6, &r6);
+	o7 = overflow_add(a6, b6, &r7);
+	o8 = overflow_add(a8, b8, &r8);
+	o9 = overflow_add(a8, b8, &r9);
 	end();
 
 	if (!o0)
