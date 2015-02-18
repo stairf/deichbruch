@@ -131,7 +131,7 @@ sub dump_try_builtin {
 sub dump_common_macros {
 	my ($indent) = @_;
 	print_pp($indent, qq @
-	#if defined overflow__strategy_lib
+	#if defined overflow__strategy__lib
 	#	define typeof __typeof__
 	#	include "safe_iop.h"
 	#endif
@@ -426,7 +426,7 @@ sub dump_custom_add {
 		#		return overflow__add_$type->{sfx}_strategy_precheck(a, b, r, a_is_const, b_is_const);
 		@);
 	print_pp($indent, qq @
-	#elif defined overflow__strategy_lib
+	#elif defined overflow__strategy__lib
 	@);
 		print_code($indent, qq @
 		#	return !sop_add(r, a, b);
@@ -440,19 +440,19 @@ sub dump_custom_add {
 			@);
 	}
 	print_pp($indent, qq @
-	#elif defined overflow__strategy_likely
+	#elif defined overflow__strategy__likely
 	@);
 		print_code($indent, qq @
 		#	return overflow__likely_add_$type->{sfx}_internal(a, b, r, a_is_const, b_is_const);
 		@);
 	print_pp($indent, qq @
-	#elif defined overflow__strategy_unlikely
+	#elif defined overflow__strategy__unlikely
 	@);
 		print_code($indent, qq @
 		#	return overflow__unlikely_add_$type->{sfx}_internal(a, b, r, a_is_const, b_is_const);
 		@);
 	print_pp($indent, qq @
-	#else /* overflow__strategy_default */
+	#else /* overflow__strategy__default */
 	@);
 		print_code($indent, qq @
 		#	if (a_is_const || b_is_const)
@@ -469,7 +469,7 @@ sub dump_custom_add {
 		#		return overflow__add_$type->{sfx}_strategy_precheck(a, b, r, a_is_const, b_is_const);
 		@);
 	print_pp($indent, qq @
-	#endif /* overflow__strategy_default */
+	#endif /* overflow__strategy__default */
 	@);
 	print_code($indent, qq @
 	#}
@@ -626,25 +626,25 @@ sub dump_custom_sub {
 		#		return overflow__sub_$type->{sfx}_strategy_precheck(a, b, r, a_is_const, b_is_const);
 		@);
 	print_pp($indent, qq @
-	#elif defined overflow__strategy_lib
+	#elif defined overflow__strategy__lib
 	@);
 		print_code($indent, qq @
 		#	return !sop_sub(r, a, b);
 		@);
 	print_pp($indent, qq @
-	#elif defined overflow__strategy_likely
+	#elif defined overflow__strategy__likely
 	@);
 		print_code($indent, qq @
 		#	return overflow__likely_sub_$type->{sfx}_internal(a, b, r, a_is_const, b_is_const);
 		@);
 	print_pp($indent, qq @
-	#elif defined overflow__strategy_unlikely
+	#elif defined overflow__strategy__unlikely
 	@);
 		print_code($indent, qq @
 		#	return overflow__unlikely_sub_$type->{sfx}_internal(a, b, r, a_is_const, b_is_const);
 		@);
 	print_pp($indent, qq @
-	#else /* overflow__strategy_default */
+	#else /* overflow__strategy__default */
 	@);
 		if ($type->{signed}) {
 			print_code($indent, qq @
@@ -667,7 +667,7 @@ sub dump_custom_sub {
 			@);
 		}
 	print_pp($indent, qq @
-	#endif /* overflow__strategy_default */
+	#endif /* overflow__strategy__default */
 	@);
 	print_code($indent, qq @
 	#}
@@ -948,25 +948,25 @@ sub dump_custom_mul {
 			@);
 	}
 	print_pp($indent, qq @
-	#elif defined overflow__strategy_lib
+	#elif defined overflow__strategy__lib
 	@);
 		print_code($indent, qq @
 		#	return !sop_mul(r, a, b);
 		@);
 	print_pp($indent, qq @
-	#elif defined overflow__strategy_likely
+	#elif defined overflow__strategy__likely
 	@);
 		print_code($indent, qq @
 		#	return overflow__likely_mul_$type->{sfx}_internal(a, b, r, a_is_const, b_is_const);
 		@);
 	print_pp($indent, qq @
-	#elif defined overflow__strategy_unlikely
+	#elif defined overflow__strategy__unlikely
 	@);
 		print_code($indent, qq @
 		#	return overflow__unlikely_mul_$type->{sfx}_internal(a, b, r, a_is_const, b_is_const);
 		@);
 	print_pp($indent, qq @
-	#else /* overflow__strategy_default */
+	#else /* overflow__strategy__default */
 	@);
 		print_code($indent, qq @
 		#	if ((a_is_const && !a) || (b_is_const && !b))
@@ -998,7 +998,7 @@ sub dump_custom_mul {
 			@);
 		}
 	print_pp($indent, qq @
-	#endif /* overflow__strategy_default */
+	#endif /* overflow__strategy__default */
 	@);
 	print_code($indent, qq @
 	#}

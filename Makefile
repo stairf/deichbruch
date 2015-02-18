@@ -79,11 +79,11 @@ LATEX    = pdflatex </dev/null -interaction=nonstopmode
 CFLAGS  += $(OPTIMIZE) $(WARN)
 
 TGSFX = i u li lu lli llu i8 u8 i16 u16 i32 u32 i64 u64
-STRAT = default precheck postcheck largetype partial likely unlikely
+STRAT = _default _likely _unlikely precheck postcheck largetype partial
 VC    = cc cv vc vv
 
 ifneq "$(strip $(wildcard safe_iop.h))" ""
-	STRAT += lib
+	STRAT += _lib
 endif
 
 TSRC := $(notdir $(wildcard $(TDIR:%=%/*.c)))

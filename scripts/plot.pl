@@ -53,6 +53,14 @@ my %lang = (
 	'u' => "unsigned int",
 	'lu' => "unsigned long",
 	'llu' => "unsigned long long",
+	'i8' => "int8_t",
+	'u8' => "uint8_t",
+	'i16' => "int16_t",
+	'u16' => "uint16_t",
+	'i32' => "int32_t",
+	'u32' => "uint32_t",
+	'i64' => "int64_t",
+	'u64' => "uint64_t",
 );
 
 
@@ -123,7 +131,7 @@ my $IMAGESCALE = 0.5 * $IMAGEW / ((scalar @strat + 1 ) * scalar @vc);
 #		\\tikzset{brace/.style={thick,decorate,decoration={brace,amplitude=5pt}}};
 #	@;
 	print $out qq @
-	\\section{Comparison of different \\textit{ $lang{${whats}} } for $lang{$const1} \\texttt{ $lang{$any->{$const1}} } and $lang{$const2} \\texttt{ $lang{$any->{$const2}} } }
+	\\section{Comparison of different \\textit{ $lang{${whats}} } for $lang{$const1} \\texttt{ @ . ($lang{$any->{$const1}} =~ s/_/-/gr) . qq @ } and $lang{$const2} \\texttt{ @ . ($lang{$any->{$const2}} =~ s/_/-/gr) . qq @ } }
 	\\begin{tikzpicture}[scale=$IMAGESCALE]
 		\\tikzset{axis/.style={ultra thick,black}};
 		\\tikzset{bar/.style={draw=black}};
@@ -168,9 +176,10 @@ my $IMAGESCALE = 0.5 * $IMAGEW / ((scalar @strat + 1 ) * scalar @vc);
 	my $shadow=0;
 	for my $strat (@strat) {
 		my $label = $lang{$strat} // $strat;
+		$label =~ s/^_/-/g;
 		print $out qq @
 			\\draw[fill=black!$shadow] ($x,$y) rectangle ++(-1,1);
-			\\node[anchor=east] at (\$($x,$y)+(-1.5,0.5)\$) { \\textbf{ $label } };
+			\\node[anchor=east] at (\$($x,$y)+(-1.5,0.5)\$) { \\textbf{ @ . ($label =~ s/_/-/gr) . qq @ } };
 		@;
 		$y--;
 		$shadow += 5;
