@@ -32,12 +32,20 @@ use strict;
 use File::Basename;
 
 my @types = (
-	{ ctype => "int",                sfx => "i",   signed => 1, size => 1, min => "INT_MIN",   max => "INT_MAX" },
-	{ ctype => "unsigned int",       sfx => "u",   signed => 0, size => 1, min => 0,           max => "UINT_MAX" },
-	{ ctype => "long",               sfx => "li",  signed => 1, size => 2, min => "LONG_MIN",  max => "LONG_MAX" },
-	{ ctype => "unsigned long",      sfx => "lu",  signed => 0, size => 2, min => 0,           max => "ULONG_MAX" },
-	{ ctype => "long long",          sfx => "lli", signed => 1, size => 3, min => "LLONG_MIN", max => "LLONG_MAX" },
-	{ ctype => "unsigned long long", sfx => "llu", signed => 0, size => 3, min => 0,           max => "ULLONG_MAX" },
+	{ ctype => "int",                sfx => "i",   signed => 1, category => "native", fmt => '"i"',    size => 1, min => "INT_MIN",   max => "INT_MAX" },
+	{ ctype => "unsigned int",       sfx => "u",   signed => 0, category => "native", fmt => '"u"',    size => 1, min => 0,           max => "UINT_MAX" },
+	{ ctype => "long",               sfx => "li",  signed => 1, category => "native", fmt => '"li"',   size => 2, min => "LONG_MIN",  max => "LONG_MAX" },
+	{ ctype => "unsigned long",      sfx => "lu",  signed => 0, category => "native", fmt => '"lu"',   size => 2, min => 0,           max => "ULONG_MAX" },
+	{ ctype => "long long",          sfx => "lli", signed => 1, category => "native", fmt => '"lli"',  size => 3, min => "LLONG_MIN", max => "LLONG_MAX" },
+	{ ctype => "unsigned long long", sfx => "llu", signed => 0, category => "native", fmt => '"llu"',  size => 3, min => 0,           max => "ULLONG_MAX" },
+	{ ctype => "int8_t",             sfx => "i8",  signed => 1, category => "fixed",  fmt => 'PRId8',  size => 1, min => "INT8_MIN",  max => "INT8_MAX" },
+	{ ctype => "uint8_t",            sfx => "u8",  signed => 0, category => "fixed",  fmt => 'PRIu8',  size => 1, min => 0,           max => "UINT8_MAX" },
+	{ ctype => "int16_t",            sfx => "i16", signed => 1, category => "fixed",  fmt => 'PRId16', size => 2, min => "INT16_MIN", max => "INT16_MAX" },
+	{ ctype => "uint16_t",           sfx => "u16", signed => 0, category => "fixed",  fmt => 'PRIu16', size => 2, min => 0,           max => "UINT16_MAX" },
+	{ ctype => "int32_t",            sfx => "i32", signed => 1, category => "fixed",  fmt => 'PRId32', size => 3, min => "INT32_MIN", max => "INT32_MAX" },
+	{ ctype => "uint32_t",           sfx => "u32", signed => 0, category => "fixed",  fmt => 'PRIu32', size => 3, min => 0,           max => "UINT32_MAX" },
+	{ ctype => "int64_t",            sfx => "i64", signed => 1, category => "fixed",  fmt => 'PRId64', size => 4, min => "INT64_MIN", max => "INT64_MAX" },
+	{ ctype => "uint64_t",           sfx => "u64", signed => 0, category => "fixed",  fmt => 'PRIu64', size => 5, min => 0,           max => "UINT64_MAX" },
 );
 
 for my $t (@types) {
@@ -60,10 +68,12 @@ for my $t (@types) {
 	my $filename = "$dirname/.$basename-$t->{sfx}.c";
 	open my $out, ">$filename" or die "failed to open `$filename': $!\n";
 	print $out "/*\n * $filename\n *\n * auto-generated type-generic C file\n */\n\n";
+	print $out "#include <stdint.h>\n";
+	print $out "#include <inttypes.h>\n";
 	print $out "#define TYPE $t->{ctype}\n";
 	print $out "#define MAX $t->{max}\n";
 	print $out "#define MIN $t->{min}\n";
-	print $out "#define FMT \"%$t->{sfx}\"\n";
+	print $out "#define FMT \"%\" $t->{fmt}\n";
 	if ($t->{signed}) {
 		print $out "#define SIGNED 1\n";
 		print $out "#define IS_2_COMPLEMENT (-MAX == MIN + 1)\n"

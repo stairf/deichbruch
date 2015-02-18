@@ -78,7 +78,7 @@ LATEX    = pdflatex </dev/null -interaction=nonstopmode
 
 CFLAGS  += $(OPTIMIZE) $(WARN)
 
-TGSFX = i u li lu lli llu
+TGSFX = i u li lu lli llu i8 u8 i16 u16 i32 u32 i64 u64
 STRAT = default precheck postcheck largetype partial likely unlikely
 VC    = cc cv vc vv
 

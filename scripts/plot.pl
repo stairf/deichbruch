@@ -157,7 +157,7 @@ my $IMAGESCALE = 0.5 * $IMAGEW / ((scalar @strat + 1 ) * scalar @vc);
 				\\draw[error] (\$($x,$item->{min})+(0.5,0)\$) -- (\$($x,$item->{max})+(0.5,0)\$);
 			@;
 			$x++;
-			$shadow += 10;
+			$shadow += 5;
 		}
 		print $out qq @
 			\\draw[thick] ($blockstart,0) -- ($x,0) node[midway,below] { \\textbf{$vc} };
@@ -173,7 +173,7 @@ my $IMAGESCALE = 0.5 * $IMAGEW / ((scalar @strat + 1 ) * scalar @vc);
 			\\node[anchor=east] at (\$($x,$y)+(-1.5,0.5)\$) { \\textbf{ $label } };
 		@;
 		$y--;
-		$shadow += 10;
+		$shadow += 5;
 	}
 #	print $out qq @
 #		\\draw[axis] (0,0) -- ($x,0);

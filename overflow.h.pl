@@ -30,17 +30,25 @@ use warnings;
 use strict;
 
 my @types = (
-	{ ctype => "int",                sfx => "i",   signed => 1, size => 1, min => "INT_MIN",   max => "INT_MAX" },
-	{ ctype => "unsigned int",       sfx => "u",   signed => 0, size => 1, min => 0,           max => "UINT_MAX" },
-	{ ctype => "long",               sfx => "li",  signed => 1, size => 2, min => "LONG_MIN",  max => "LONG_MAX" },
-	{ ctype => "unsigned long",      sfx => "lu",  signed => 0, size => 2, min => 0,           max => "ULONG_MAX" },
-	{ ctype => "long long",          sfx => "lli", signed => 1, size => 3, min => "LLONG_MIN", max => "LLONG_MAX" },
-	{ ctype => "unsigned long long", sfx => "llu", signed => 0, size => 3, min => 0,           max => "ULLONG_MAX" },
+	{ ctype => "int",                sfx => "i",   signed => 1, category => "native", size => 1, min => "INT_MIN",   max => "INT_MAX" },
+	{ ctype => "unsigned int",       sfx => "u",   signed => 0, category => "native", size => 1, min => 0,           max => "UINT_MAX" },
+	{ ctype => "long",               sfx => "li",  signed => 1, category => "native", size => 2, min => "LONG_MIN",  max => "LONG_MAX" },
+	{ ctype => "unsigned long",      sfx => "lu",  signed => 0, category => "native", size => 2, min => 0,           max => "ULONG_MAX" },
+	{ ctype => "long long",          sfx => "lli", signed => 1, category => "native", size => 3, min => "LLONG_MIN", max => "LLONG_MAX" },
+	{ ctype => "unsigned long long", sfx => "llu", signed => 0, category => "native", size => 3, min => 0,           max => "ULLONG_MAX" },
+	{ ctype => "int8_t",             sfx => "i8",  signed => 1, category => "fixed",  size => 1, min => "INT8_MIN",  max => "INT8_MAX" },
+	{ ctype => "uint8_t",            sfx => "u8",  signed => 0, category => "fixed",  size => 1, min => 0,           max => "UINT8_MAX" },
+	{ ctype => "int16_t",            sfx => "i16", signed => 1, category => "fixed",  size => 2, min => "INT16_MIN", max => "INT16_MAX" },
+	{ ctype => "uint16_t",           sfx => "u16", signed => 0, category => "fixed",  size => 2, min => 0,           max => "UINT16_MAX" },
+	{ ctype => "int32_t",            sfx => "i32", signed => 1, category => "fixed",  size => 3, min => "INT32_MIN", max => "INT32_MAX" },
+	{ ctype => "uint32_t",           sfx => "u32", signed => 0, category => "fixed",  size => 3, min => 0,           max => "UINT32_MAX" },
+	{ ctype => "int64_t",            sfx => "i64", signed => 1, category => "fixed",  size => 4, min => "INT64_MIN", max => "INT64_MAX" },
+	{ ctype => "uint64_t",           sfx => "u64", signed => 0, category => "fixed",  size => 4, min => 0,           max => "UINT64_MAX" },
 );
 
 for my $t (@types) {
-	$t->{stype} = (grep { $_->{size} == $t->{size} && $_->{signed} } @types)[0] if (!$t->{signed});
-	$t->{utype} = (grep { $_->{size} == $t->{size} && !$_->{signed} } @types)[0] if ($t->{signed});
+	$t->{stype} = (grep { $_->{size} == $t->{size} and $_->{category} eq $t->{category} and $_->{signed} } @types)[0] if (!$t->{signed});
+	$t->{utype} = (grep { $_->{size} == $t->{size} and $_->{category} eq $t->{category} and !$_->{signed} } @types)[0] if ($t->{signed});
 }
 
 my @ops = (
@@ -48,6 +56,11 @@ my @ops = (
 	{ name => "sub", operator => "-" },
 	{ name => "mul", operator => "*" },
 );
+
+sub get_larger_types {
+	my ($type) = @_;
+	return grep { $_->{signed} == $type->{signed} and $_->{category} eq $type->{category} and $_->{size} > $type->{size} } @types;
+}
 
 
 sub print_comment {
@@ -99,6 +112,7 @@ sub dump_use_builtins {
 
 sub dump_try_builtin {
 	my ($indent, $type, $opname) = @_;
+	return if $type->{category} ne "native";
 	my $asm = ($type->{signed} ? "s" : "u") . $opname . ($type->{sfx} =~ s/[ui]$//r);
 	print_pp($indent, qq @
 	#if defined __clang__
@@ -285,7 +299,7 @@ sub dump_custom_add {
 	@);
 	print "\n";
 
-	for my $largetype (grep { $_->{signed} == $type->{signed} && $_->{size} > $type->{size} } @types) {
+	for my $largetype (get_larger_types($type)) {
 		print_code($indent, qq @
 		#overflow__private overflow__nonnull_arg(3) overflow__must_check
 		#int overflow__add_$type->{sfx}_strategy_largetype_$largetype->{sfx}($type->{ctype} a, $type->{ctype} b, $type->{ctype} *r, int a_is_const, int b_is_const)
@@ -366,7 +380,7 @@ sub dump_custom_add {
 		#	if (a_is_const || b_is_const)
 		#		return overflow__expect(overflow__add_$type->{sfx}_strategy_precheck(a, b, r, a_is_const, b_is_const), 0);
 		@);
-		for my $largetype (grep { $_->{signed} == $type->{signed} && $_->{size} > $type->{size} } @types) {
+		for my $largetype (get_larger_types($type)) {
 			print_code($indent, qq @
 			#	else if (sizeof($largetype->{ctype}) > sizeof($type->{ctype}) && sizeof(void *) == sizeof($largetype->{ctype}))
 			#		return overflow__expect(overflow__add_$type->{sfx}_strategy_largetype_$largetype->{sfx}(a, b, r, a_is_const, b_is_const), 0);
@@ -401,7 +415,7 @@ sub dump_custom_add {
 		#	if (0)
 		#		return 1;
 		@);
-		for my $largetype (grep { $_->{signed} == $type->{signed} && $_->{size} > $type->{size} } @types) {
+		for my $largetype (get_larger_types($type)) {
 			print_code($indent, qq @
 			#	else if (sizeof($largetype->{ctype}) > sizeof($type->{ctype}))
 			#		return overflow__add_$type->{sfx}_strategy_largetype_$largetype->{sfx}(a, b, r, a_is_const, b_is_const);
@@ -444,7 +458,7 @@ sub dump_custom_add {
 		#	if (a_is_const || b_is_const)
 		#		return overflow__add_$type->{sfx}_strategy_precheck(a, b, r, a_is_const, b_is_const);
 		@);
-		for my $largetype (grep { $_->{signed} == $type->{signed} && $_->{size} > $type->{size} } @types) {
+		for my $largetype (get_larger_types($type)) {
 			print_code($indent, qq @
 			#	else if (sizeof($largetype->{ctype}) > sizeof($type->{ctype}) && sizeof(void *) >= sizeof($largetype->{ctype}))
 			#		return overflow__add_$type->{sfx}_strategy_largetype_$largetype->{sfx}(a, b, r, a_is_const, b_is_const);
@@ -526,7 +540,7 @@ sub dump_custom_sub {
 		@);
 	}
 
-	for my $largetype (grep { $_->{signed} == $type->{signed} && $_->{size} > $type->{size} } @types) {
+	for my $largetype (get_larger_types($type)) {
 		print_code($indent, qq @
 		#overflow__private overflow__nonnull_arg(3) overflow__must_check
 		#int overflow__sub_$type->{sfx}_strategy_largetype_$largetype->{sfx}($type->{ctype} a, $type->{ctype} b, $type->{ctype} *r, int a_is_const, int b_is_const)
@@ -601,7 +615,7 @@ sub dump_custom_sub {
 		#	if (0)
 		#		return 1;
 		@);
-		for my $largetype (grep { $_->{signed} == $type->{signed} && $_->{size} > $type->{size} } @types) {
+		for my $largetype (get_larger_types($type)) {
 			print_code($indent, qq @
 			#	else if (sizeof($largetype->{ctype}) > sizeof($type->{ctype}))
 			#		return overflow__sub_$type->{sfx}_strategy_largetype_$largetype->{sfx}(a, b, r, a_is_const, b_is_const);
@@ -637,7 +651,7 @@ sub dump_custom_sub {
 			#	if (a_is_const || b_is_const)
 			#		return overflow__sub_$type->{sfx}_strategy_precheck(a, b, r, a_is_const, b_is_const);
 			@);
-			for my $largetype (grep { $_->{signed} == $type->{signed} && $_->{size} > $type->{size} } @types) {
+			for my $largetype (get_larger_types($type)) {
 				print_code($indent, qq @
 				#	else if (sizeof($largetype->{ctype}) > sizeof($type->{ctype}) && sizeof(void *) >= sizeof($largetype->{ctype}))
 				#		return overflow__sub_$type->{sfx}_strategy_largetype_$largetype->{sfx}(a, b, r, a_is_const, b_is_const);
@@ -725,7 +739,7 @@ sub dump_custom_mul {
 	@);
 	print "\n";
 
-	for my $largetype (grep { $_->{signed} == $type->{signed} && $_->{size} > $type->{size} } @types) {
+	for my $largetype (get_larger_types($type)) {
 		print_code($indent, qq @
 		#overflow__private overflow__nonnull_arg(3) overflow__must_check
 		#int overflow__mul_$type->{sfx}_strategy_largetype_$largetype->{sfx}($type->{ctype} a, $type->{ctype} b, $type->{ctype} *r, int a_is_const, int b_is_const)
@@ -826,7 +840,7 @@ sub dump_custom_mul {
 		#	else if ((a_is_const && b_is_const) || (a_is_const && a > 0 && overflow__is_pow2(a)) || (b_is_const && b > 0 && overflow__is_pow2(b)))
 		#		return overflow__expect(overflow__mul_$type->{sfx}_strategy_precheck(a, b, r, a_is_const, b_is_const), 1);
 		@);
-		for my $largetype (grep { $_->{signed} == $type->{signed} && $_->{size} > $type->{size} } @types) {
+		for my $largetype (get_larger_types($type)) {
 			print_code($indent, qq @
 			#	else if (sizeof($largetype->{ctype}) >= 2*sizeof($type->{ctype}))
 			#		return overflow__expect(overflow__mul_$type->{sfx}_strategy_largetype_$largetype->{sfx}(a, b, r, a_is_const, b_is_const), 1);
@@ -865,7 +879,7 @@ sub dump_custom_mul {
 		#	else if ((a_is_const && b_is_const) || (a_is_const && a > 0 && overflow__is_pow2(a)) || (b_is_const && b > 0 && overflow__is_pow2(b)))
 		#		return overflow__expect(overflow__mul_$type->{sfx}_strategy_precheck(a, b, r, a_is_const, b_is_const), 0);
 		@);
-		for my $largetype (grep { $_->{signed} == $type->{signed} && $_->{size} > $type->{size} } @types) {
+		for my $largetype (get_larger_types($type)) {
 			print_code($indent, qq @
 			#	else if (sizeof($largetype->{ctype}) >= 2*sizeof($type->{ctype}))
 			#		return overflow__expect(overflow__mul_$type->{sfx}_strategy_largetype_$largetype->{sfx}(a, b, r, a_is_const, b_is_const), 0);
@@ -915,7 +929,7 @@ sub dump_custom_mul {
 		#	if (0)
 		#		return 1;
 		@);
-		for my $largetype (grep { $_->{signed} == $type->{signed} && $_->{size} > $type->{size} } @types) {
+		for my $largetype (get_larger_types($type)) {
 			print_code($indent, qq @
 			#	else if (sizeof($largetype->{ctype}) >= 2*sizeof($type->{ctype}))
 			#		return overflow__mul_$type->{sfx}_strategy_largetype_$largetype->{sfx}(a, b, r, a_is_const, b_is_const);
@@ -964,7 +978,7 @@ sub dump_custom_mul {
 		#	else if ((a_is_const && b_is_const) || (a_is_const && a > 0 && overflow__is_pow2(a)) || (b_is_const && b > 0 && overflow__is_pow2(b)))
 		#		return overflow__mul_$type->{sfx}_strategy_precheck(a, b, r, a_is_const, b_is_const);
 		@);
-		for my $largetype (grep { $_->{signed} == $type->{signed} && $_->{size} > $type->{size} } @types) {
+		for my $largetype (get_larger_types($type)) {
 			print_code($indent, qq @
 			#	else if (sizeof($largetype->{ctype}) >= 2*sizeof($type->{ctype}))
 			#		return overflow__mul_$type->{sfx}_strategy_largetype_$largetype->{sfx}(a, b, r, a_is_const, b_is_const);

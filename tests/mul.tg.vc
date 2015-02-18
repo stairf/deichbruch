@@ -146,18 +146,20 @@ int main(int argc, char **argv)
 	fail(64, MAX/8);
 	fail(MAX/16, 32);
 	fail(32, MAX/16);
-	fail(MAX/32, 33);
-	fail(33, MAX/32);
-	fail(MAX/32, 34);
-	fail(34, MAX/32);
-	fail(MAX/32, 36);
-	fail(36, MAX/32);
-	fail(MAX/32, 40);
-	fail(40, MAX/32);
-	fail(MAX/32, 48);
-	fail(48, MAX/32);
-	fail(MAX/32, 64);
-	fail(64, MAX/32);
+	if (sizeof(TYPE) > 1) {
+		fail(MAX/32, 33);
+		fail(33, MAX/32);
+		fail(MAX/32, 34);
+		fail(34, MAX/32);
+		fail(MAX/32, 36);
+		fail(36, MAX/32);
+		fail(MAX/32, 40);
+		fail(40, MAX/32);
+		fail(MAX/32, 48);
+		fail(48, MAX/32);
+		fail(MAX/32, 64);
+		fail(64, MAX/32);
+	}
 
 	return 0;
 }
