@@ -345,6 +345,33 @@ sub dump_custom_add {
 		#}
 		@);
 		print "\n";
+
+		print_code($indent, qq @
+		#overflow__private overflow__nonnull_arg(3) overflow__must_check
+		#int overflow__add_$type->{sfx}_strategy_partial($type->{ctype} a, $type->{ctype} b, $type->{ctype} *r, int a_is_const, int b_is_const)
+		#{
+		#	(void) a_is_const;
+		#	(void) b_is_const;
+		#	$type->{ctype} lmask = $type->{max} / 2;
+		#	$type->{ctype} hmask = ~lmask;
+		#	$type->{ctype} ah = a & hmask;
+		#	$type->{ctype} bh = b & hmask;
+		#	if (ah & bh)
+		#		return 1;
+		#	$type->{ctype} al = a & lmask;
+		#	$type->{ctype} bl = b & lmask;
+		#	$type->{ctype} c = al + bl;
+		#	$type->{ctype} ch = c & hmask;
+		#	$type->{ctype} oh = ah | bh;
+		#	if (oh & ch)
+		#		return 1;
+		#	c |= oh;
+		#	overflow__assume(c == a + b);
+		#	*r = c;
+		#	return 0;
+		#}
+		@);
+		print "\n";
 	}
 
 	print_code($indent, qq @
@@ -437,6 +464,12 @@ sub dump_custom_add {
 		@);
 			print_code($indent, qq @
 			#	return overflow__add_$type->{sfx}_strategy_postcheck(a, b, r, a_is_const, b_is_const);
+			@);
+		print_pp($indent, qq @
+		#elif defined overflow__strategy_partial
+		@);
+			print_code($indent, qq @
+			#	return overflow__add_$type->{sfx}_strategy_partial(a, b, r, a_is_const, b_is_const);
 			@);
 	}
 	print_pp($indent, qq @
