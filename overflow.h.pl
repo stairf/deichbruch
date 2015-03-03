@@ -236,6 +236,8 @@ sub dump_common_macros {
 
 	#define overflow__is_pow2(x) (!((x) & ((x)-1)))
 
+	#define overflow__is_fast_type(type) (sizeof(type) >= sizeof(int))
+
 	#if defined __clang__
 	#	if __has_builtin(__builtin_expect)
 	#		define overflow__expect(val, exp) __builtin_expect((val), (exp))
@@ -387,7 +389,7 @@ sub dump_custom_add {
 		print_code($indent, qq @
 		#	if (a_is_const || b_is_const)
 		#		return overflow__expect(overflow__add_$type->{sfx}_strategy_precheck(a, b, r, a_is_const, b_is_const), 1);
-		#	else if (sizeof(void *) >= sizeof($type->{ctype}))
+		#	else if (overflow__is_fast_type($type->{ctype}))
 		#		return overflow__expect(overflow__add_$type->{sfx}_strategy_postcheck(a, b, r, a_is_const, b_is_const), 1);
 		#	else
 		#		return overflow__expect(overflow__add_$type->{sfx}_strategy_precheck(a, b, r, a_is_const, b_is_const), 1);
@@ -409,7 +411,7 @@ sub dump_custom_add {
 		@);
 		for my $largetype (get_larger_types($type)) {
 			print_code($indent, qq @
-			#	else if (sizeof($largetype->{ctype}) > sizeof($type->{ctype}) && sizeof(void *) == sizeof($largetype->{ctype}))
+			#	else if (sizeof($largetype->{ctype}) > sizeof($type->{ctype}) && overflow__is_fast_type($largetype->{ctype}))
 			#		return overflow__expect(overflow__add_$type->{sfx}_strategy_largetype_$largetype->{sfx}(a, b, r, a_is_const, b_is_const), 0);
 			@);
 		}
@@ -493,7 +495,7 @@ sub dump_custom_add {
 		@);
 		for my $largetype (get_larger_types($type)) {
 			print_code($indent, qq @
-			#	else if (sizeof($largetype->{ctype}) > sizeof($type->{ctype}) && sizeof(void *) >= sizeof($largetype->{ctype}))
+			#	else if (sizeof($largetype->{ctype}) > sizeof($type->{ctype}) && overflow__is_fast_type($largetype->{ctype}))
 			#		return overflow__add_$type->{sfx}_strategy_largetype_$largetype->{sfx}(a, b, r, a_is_const, b_is_const);
 			@);
 		}
@@ -679,7 +681,7 @@ sub dump_custom_sub {
 			@);
 			for my $largetype (get_larger_types($type)) {
 				print_code($indent, qq @
-				#	else if (sizeof($largetype->{ctype}) > sizeof($type->{ctype}) && sizeof(void *) >= sizeof($largetype->{ctype}))
+				#	else if (sizeof($largetype->{ctype}) > sizeof($type->{ctype}) && overflow__is_fast_type($largetype->{ctype}))
 				#		return overflow__sub_$type->{sfx}_strategy_largetype_$largetype->{sfx}(a, b, r, a_is_const, b_is_const);
 				@)
 			}
@@ -868,7 +870,7 @@ sub dump_custom_mul {
 		@);
 		for my $largetype (get_larger_types($type)) {
 			print_code($indent, qq @
-			#	else if (sizeof($largetype->{ctype}) >= 2*sizeof($type->{ctype}))
+			#	else if (sizeof($largetype->{ctype}) >= 2*sizeof($type->{ctype}) && overflow__is_fast_type($largetype->{ctype}))
 			#		return overflow__expect(overflow__mul_$type->{sfx}_strategy_largetype_$largetype->{sfx}(a, b, r, a_is_const, b_is_const), 1);
 			@);
 		}
@@ -907,7 +909,7 @@ sub dump_custom_mul {
 		@);
 		for my $largetype (get_larger_types($type)) {
 			print_code($indent, qq @
-			#	else if (sizeof($largetype->{ctype}) >= 2*sizeof($type->{ctype}))
+			#	else if (sizeof($largetype->{ctype}) >= 2*sizeof($type->{ctype}) && overflow__is_fast_type($largetype->{ctype}))
 			#		return overflow__expect(overflow__mul_$type->{sfx}_strategy_largetype_$largetype->{sfx}(a, b, r, a_is_const, b_is_const), 0);
 			@);
 		}
@@ -1006,7 +1008,7 @@ sub dump_custom_mul {
 		@);
 		for my $largetype (get_larger_types($type)) {
 			print_code($indent, qq @
-			#	else if (sizeof($largetype->{ctype}) >= 2*sizeof($type->{ctype}))
+			#	else if (sizeof($largetype->{ctype}) >= 2*sizeof($type->{ctype}) && overflow__is_fast_type($largetype->{ctype}))
 			#		return overflow__mul_$type->{sfx}_strategy_largetype_$largetype->{sfx}(a, b, r, a_is_const, b_is_const);
 			@);
 		}
