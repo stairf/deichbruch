@@ -573,35 +573,26 @@ sub dump_custom_sub {
 		@);
 	}
 
-	for my $largetype (get_larger_types($type)) {
-		print_code($indent, qq @
-		#overflow__private overflow__nonnull_arg(3) overflow__must_check
-		#int overflow__sub_$type->{sfx}_strategy_largetype_$largetype->{sfx}($type->{ctype} a, $type->{ctype} b, $type->{ctype} *r, int a_is_const, int b_is_const)
-		#{
-		#	(void) a_is_const;
-		#	(void) b_is_const;
-		#	$largetype->{ctype} a2 = a;
-		#	$largetype->{ctype} b2 = b;
-		#	a2 -= b2;
-		@);
-		if ($type->{signed}) {
+	if ($type->{signed}) {
+		for my $largetype (get_larger_types($type)) {
 			print_code($indent, qq @
+			#overflow__private overflow__nonnull_arg(3) overflow__must_check
+			#int overflow__sub_$type->{sfx}_strategy_largetype_$largetype->{sfx}($type->{ctype} a, $type->{ctype} b, $type->{ctype} *r, int a_is_const, int b_is_const)
+			#{
+			#	(void) a_is_const;
+			#	(void) b_is_const;
+			#	$largetype->{ctype} a2 = a;
+			#	$largetype->{ctype} b2 = b;
+			#	a2 -= b2;
 			#	if (a2 < $type->{min} || a2 > $type->{max})
 			#		return 1;
+			#	overflow__assume(a2 == a - b);
+			#	*r = ($type->{ctype}) a2;
+			#	return 0;
+			#}
 			@);
-		} else {
-			print_code($indent, qq @
-			#	if (a2 & ~(($largetype->{ctype}) $type->{max})) /* a2 > $type->{max} */
-			#		return 1;
-			@);
+			print "\n";
 		}
-		print_code($indent, qq @
-		#	overflow__assume(a2 == a - b);
-		#	*r = ($type->{ctype}) a2;
-		#	return 0;
-		#}
-		@);
-		print "\n";
 	}
 
 	print_code($indent, qq @
@@ -641,23 +632,25 @@ sub dump_custom_sub {
 			#	return overflow__sub_$type->{sfx}_strategy_postcheck(a, b, r, a_is_const, b_is_const);
 			@);
 	}
-	print_pp($indent, qq @
-	#elif defined overflow__strategy_largetype
-	@);
-		print_code($indent, qq @
-		#	if (0)
-		#		return 1;
+	if ($type->{signed}) {
+		print_pp($indent, qq @
+		#elif defined overflow__strategy_largetype
 		@);
-		for my $largetype (get_larger_types($type)) {
 			print_code($indent, qq @
-			#	else if (sizeof($largetype->{ctype}) > sizeof($type->{ctype}))
-			#		return overflow__sub_$type->{sfx}_strategy_largetype_$largetype->{sfx}(a, b, r, a_is_const, b_is_const);
-			@)
-		}
-		print_code($indent, qq @
-		#	else
-		#		return overflow__sub_$type->{sfx}_strategy_precheck(a, b, r, a_is_const, b_is_const);
-		@);
+			#	if (0)
+			#		return 1;
+			@);
+			for my $largetype (get_larger_types($type)) {
+				print_code($indent, qq @
+				#	else if (sizeof($largetype->{ctype}) > sizeof($type->{ctype}))
+				#		return overflow__sub_$type->{sfx}_strategy_largetype_$largetype->{sfx}(a, b, r, a_is_const, b_is_const);
+				@)
+			}
+			print_code($indent, qq @
+			#	else
+			#		return overflow__sub_$type->{sfx}_strategy_precheck(a, b, r, a_is_const, b_is_const);
+			@);
+	}
 	print_pp($indent, qq @
 	#elif defined overflow__strategy__lib
 	@);
