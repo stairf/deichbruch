@@ -123,35 +123,22 @@ sub print_define {
 	print "\n\n";
 }
 
-sub dump_use_builtins {
-	my ($indent) = @_;
-	for my $op (map {$_->{name}} @ops) {
-		print_pp($indent, qq @
-			#define overflow_${op}(a,b,r)     __builtin_${op}_overflow((a),(b),(r))
-			#define overflow_${op}_i(a,b,r)   __builtin_s${op}_overflow((a),(b),(r))
-			#define overflow_${op}_u(a,b,r)   __builtin_u${op}_overflow((a),(b),(r))
-			#define overflow_${op}_li(a,b,r)  __builtin_s${op}l_overflow((a),(b),(r))
-			#define overflow_${op}_lu(a,b,r)  __builtin_u${op}l_overflow((a),(b),(r))
-			#define overflow_${op}_lli(a,b,r) __builtin_s${op}ll_overflow((a),(b),(r))
-			#define overflow_${op}_llu(a,b,r) __builtin_u${op}ll_overflow((a),(b),(r))
-		@);
-	}
-}
-
 sub dump_try_builtin {
 	my ($indent, $type, $opname) = @_;
 	return if $type->{category} ne "native";
 	my $asm = ($type->{signed} ? "s" : "u") . $opname . ($type->{sfx} =~ s/[ui]$//r);
 	print_pp($indent, qq @
-	#if defined __clang__
-	#	if __has_builtin(__builtin_${asm}_overflow)
-	#		define overflow_${opname}_$type->{sfx}(a, b, r) __builtin_${asm}_overflow((a), (b), (r))
+	#ifndef overflow__no_builtins
+	#	if defined __clang__
+	#		if __has_builtin(__builtin_${asm}_overflow)
+	#			define overflow_${opname}_$type->{sfx}(a, b, r) __builtin_${asm}_overflow((a), (b), (r))
+	#		endif
+	#	elif defined __GNUC__
+	#		if __GNUC__ >= 5
+	#			define overflow_${opname}_$type->{sfx}(a, b, r) __builtin_${asm}_overflow((a), (b), (r))
+	#		endif
 	#	endif
-	#elif defined __GNUC__
-	#	if __GNUC__ >= 5
-	#		define overflow_${opname}_$type->{sfx}(a, b, r) __builtin_${asm}_overflow((a), (b), (r))
-	#	endif
-	#endif
+	#endif /* overflow__no_builtins */
 	@);
 	print "\n";
 }
@@ -768,7 +755,7 @@ sub dump_generic {
 	print_pp($indent, qq @
 	#ifndef overflow_$op->{name}
 	#	if defined __clang__
-	#		if __has_builtin(__builtin_$op->{name}_overflow)
+	#		if !defined overflow__no_builtins && __has_builtin(__builtin_$op->{name}_overflow)
 	#			define overflow_$op->{name}(a, b, r)          __builtin_$op->{name}_overflow((a), (b), (r))
 	#			define overflow_likely_$op->{name}(a, b, r)   overflow__expect(__builtin_$op->{name}_overflow((a), (b), (r)), 1)
 	#			define overflow_unlikely_$op->{name}(a, b, r) overflow__expect(__builtin_$op->{name}_overflow((a), (b), (r)), 0)
@@ -788,8 +775,8 @@ sub dump_generic {
 	print_pp($indent, qq @
 	#		endif
 	#	elif defined __GNUC__
-	#		if __GNUC__ >= 5
-	#			define overflow_$op->{name}(a, b, r) __builtin_$op->{name}_overflow((a), (b), (r))
+	#		if !defined overflow__no_builtins && __GNUC__ >= 5
+	#			define overflow_$op->{name}(a, b, r)          __builtin_$op->{name}_overflow((a), (b), (r))
 	#			define overflow_likely_$op->{name}(a, b, r)   overflow__expect(__builtin_$op->{name}_overflow((a), (b), (r)), 1)
 	#			define overflow_unlikely_$op->{name}(a, b, r) overflow__expect(__builtin_$op->{name}_overflow((a), (b), (r)), 0)
 	#		elif __GNUC__ >= 4 /* TODO  */
