@@ -56,7 +56,7 @@ for my $t (@types) {
 my @ops = (
 	{ name => "add", operator => "+" },
 	{ name => "sub", operator => "-" },
-	{ name => "mul", operator => "*" },
+	{ name => "mul", operator => "*", examine => [{ name => "pow2", macro => "is_pow2" }] },
 );
 
 my @prefixes = (
@@ -829,13 +829,14 @@ sub strategy_implemented {
 }
 
 sub find_best_strategy {
-	my ($prefix, $type, $op, $vc) = @_;
+	my ($prefix, $type, $op, $vc, $examine) = @_;
 	my @w = @{ $prefix->{weights} };
 	my %data = ();
+	my $examinename = defined $examine->{name} ? "-$examine->{name}" : "";
 	for my $strat (@strategies) {
 		my $s = $strat->{name};
 		next if !strategy_implemented($type, $op, $strat);
-		my $filename = "benchmarks/...$vc->{name}-$op->{name}-$type->{sfx}-$s.data";
+		my $filename = "benchmarks/...$vc->{name}-$op->{name}${examinename}-$type->{sfx}-$s.data";
 		my $ofilename = "benchmarks/...$vc->{name}-$op->{name}-overflow-$type->{sfx}-$s.data";
 		my ($avg, $min, $max) = read_eval_data($filename);
 		my ($oavg, $omin, $omax) = read_eval_data($ofilename);
@@ -865,11 +866,18 @@ sub generate_default_strategy {
 	#{
 	@);
 	for my $vc (@vc) {
-		my $strat = find_best_strategy($prefix, $type, $op, $vc);
-		print_code($indent, qq @
-		#	if ($vc->{a} && $vc->{b})
-		#		return $expect(overflow__$op->{name}_$type->{sfx}_strategy_$strat(a, b, r, a_is_const, b_is_const));
-		@);
+		for my $examine (@{ $op->{examine} // [] }, ({})) {
+				next if defined $examine->{macro} and !$vc->{fst} and !$vc->{snd};
+				my $strat = find_best_strategy($prefix, $type, $op, $vc, $examine);
+				my $expr = "$vc->{a} && $vc->{b}";
+				if (defined $examine->{macro}) {
+					$expr .= " && (" . (join " || ", (($vc->{fst} ? "overflow__$examine->{macro}(a)" : ()), ($vc->{snd} ? "overflow__$examine->{macro}(b)" : ()))) . ")";
+				}
+				print_code($indent, qq @
+				#	if ($expr)
+				#		return $expect(overflow__$op->{name}_$type->{sfx}_strategy_$strat(a, b, r, a_is_const, b_is_const));
+				@);
+		}
 	}
 	print_code($indent, qq @
 	#	/* dead code */
