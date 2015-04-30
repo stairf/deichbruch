@@ -29,6 +29,8 @@
 use warnings;
 use strict;
 
+our $GENERATE_DEFAULT = defined $ENV{NO_DEFAULT_STRATEGY} ? 0 : 1;
+
 my @types = (
 	{ ctype => "int",                sfx => "i",   signed => 1, category => "native", size => 1, min => "INT_MIN",   max => "INT_MAX" },
 	{ ctype => "unsigned int",       sfx => "u",   signed => 0, category => "native", size => 1, min => 0,           max => "UINT_MAX" },
@@ -56,6 +58,32 @@ my @ops = (
 	{ name => "sub", operator => "-" },
 	{ name => "mul", operator => "*" },
 );
+
+my @prefixes = (
+	{ name => "",          weights => [30, 3, 3, 10, 1, 1] },
+	{ name => "_likely",   weights => [10, 1, 1, 50, 5, 5] },
+	{ name => "_unlikely", weights => [50, 5, 5, 10, 1, 1] },
+);
+
+my @vc = (
+	{ name => "cc", fst => 1, snd => 1 },
+	{ name => "cv", fst => 1, snd => 0 },
+	{ name => "vc", fst => 0, snd => 1 },
+	{ name => "vv", fst => 0, snd => 0 },
+);
+
+for my $vc (@vc) {
+	$vc->{a} = ($vc->{fst} ? "" : "!") . "a_is_const";
+	$vc->{b} = ($vc->{snd} ? "" : "!") . "b_is_const";
+}
+
+my @strategies = (
+	{ name => "precheck",  impl => [ "sadd", "uadd", "smul", "umul", "ssub", "usub" ] },
+	{ name => "largetype", impl => [ "sadd", "uadd", "smul", "umul", "ssub", 0      ] },
+	{ name => "postcheck", impl => [ 0,      "uadd", 0,      "umul", 0,      "usub" ] },
+	{ name => "partial",   impl => [ 0,      "uadd", 0,      "umul", 0,      0      ] },
+);
+
 
 sub get_larger_types {
 	my ($type) = @_;
@@ -252,6 +280,12 @@ sub dump_common_macros {
 	#	define overflow__expect(val, exp) (val)
 	#endif
 
+	#define overflow__likely(x)   overflow__expect((x), 1)
+	#define overflow__unlikely(x) overflow__expect((x), 0)
+
+	#define overflow__add_suitable_largetype(largetype, type) (sizeof(largetype) > sizeof(type))
+	#define overflow__sub_suitable_largetype(largetype, type) (sizeof(largetype) > sizeof(type))
+	#define overflow__mul_suitable_largetype(largetype, type) (sizeof(largetype) >= 2*sizeof(type))
 
 	#include <stdint.h>
 	#include <limits.h>
@@ -376,140 +410,13 @@ sub dump_custom_add {
 		print "\n";
 	}
 
-	print_code($indent, qq @
-	#overflow__private overflow__nonnull_arg(3) overflow__must_check
-	#int overflow__likely_add_$type->{sfx}_internal($type->{ctype} a, $type->{ctype} b, $type->{ctype} *r, int a_is_const, int b_is_const)
-	#{
-	@);
-	if ($type->{signed}) {
-		print_code($indent, qq @
-		#	return overflow__expect(overflow__add_$type->{sfx}_strategy_precheck(a, b, r, a_is_const, b_is_const), 1);
-		@);
-	} else {
-		print_code($indent, qq @
-		#	if (a_is_const || b_is_const)
-		#		return overflow__expect(overflow__add_$type->{sfx}_strategy_precheck(a, b, r, a_is_const, b_is_const), 1);
-		#	else if (overflow__is_fast_type($type->{ctype}))
-		#		return overflow__expect(overflow__add_$type->{sfx}_strategy_postcheck(a, b, r, a_is_const, b_is_const), 1);
-		#	else
-		#		return overflow__expect(overflow__add_$type->{sfx}_strategy_precheck(a, b, r, a_is_const, b_is_const), 1);
-		@);
+
+	for my $prefix (@prefixes) {
+		my $op = (grep { $_->{name} eq "add" } @ops)[0];
+		generate_largetype($indent, $prefix, $type, $op);
+		generate_default_strategy($indent, $prefix, $type, $op);
+		generate_internal($indent, $prefix, $type, $op);
 	}
-	print_code($indent, qq @
-	#}
-	@);
-	print "\n";
-
-	print_code($indent, qq @
-	#overflow__private overflow__nonnull_arg(3) overflow__must_check
-	#int overflow__unlikely_add_$type->{sfx}_internal($type->{ctype} a, $type->{ctype} b, $type->{ctype} *r, int a_is_const, int b_is_const)
-	#{
-	@);
-		print_code($indent, qq @
-		#	if (a_is_const || b_is_const)
-		#		return overflow__expect(overflow__add_$type->{sfx}_strategy_precheck(a, b, r, a_is_const, b_is_const), 0);
-		@);
-		for my $largetype (get_larger_types($type)) {
-			print_code($indent, qq @
-			#	else if (sizeof($largetype->{ctype}) > sizeof($type->{ctype}) && overflow__is_fast_type($largetype->{ctype}))
-			#		return overflow__expect(overflow__add_$type->{sfx}_strategy_largetype_$largetype->{sfx}(a, b, r, a_is_const, b_is_const), 0);
-			@);
-		}
-		print_code($indent, qq @
-		#	else
-		#		return overflow__expect(overflow__add_$type->{sfx}_strategy_precheck(a, b, r, a_is_const, b_is_const), 0);
-		@);
-	print_code($indent, qq @
-	#}
-	@);
-	print "\n";
-
-	print_code($indent, qq @
-	#overflow__private overflow__nonnull_arg(3) overflow__must_check
-	#int overflow__add_$type->{sfx}_internal($type->{ctype} a, $type->{ctype} b, $type->{ctype} *r, int a_is_const, int b_is_const)
-	#{
-	@);
-	print_pp($indent, qq @
-	#if defined overflow__strategy_precheck
-	@);
-		print_code($indent, qq @
-		#	return overflow__add_$type->{sfx}_strategy_precheck(a, b, r, a_is_const, b_is_const);
-		@);
-
-	print_pp($indent, qq @
-	#elif defined overflow__strategy_largetype
-	@);
-
-		print_code($indent, qq @
-		#	if (0)
-		#		return 1;
-		@);
-		for my $largetype (get_larger_types($type)) {
-			print_code($indent, qq @
-			#	else if (sizeof($largetype->{ctype}) > sizeof($type->{ctype}))
-			#		return overflow__add_$type->{sfx}_strategy_largetype_$largetype->{sfx}(a, b, r, a_is_const, b_is_const);
-			@);
-		}
-		print_code($indent, qq @
-		#	else
-		#		return overflow__add_$type->{sfx}_strategy_precheck(a, b, r, a_is_const, b_is_const);
-		@);
-	print_pp($indent, qq @
-	#elif defined overflow__strategy__lib
-	@);
-		print_code($indent, qq @
-		#	return !sop_add(r, a, b);
-		@);
-	if (!$type->{signed}) {
-		print_pp($indent, qq @
-		#elif defined overflow__strategy_postcheck
-		@);
-			print_code($indent, qq @
-			#	return overflow__add_$type->{sfx}_strategy_postcheck(a, b, r, a_is_const, b_is_const);
-			@);
-		print_pp($indent, qq @
-		#elif defined overflow__strategy_partial
-		@);
-			print_code($indent, qq @
-			#	return overflow__add_$type->{sfx}_strategy_partial(a, b, r, a_is_const, b_is_const);
-			@);
-	}
-	print_pp($indent, qq @
-	#elif defined overflow__strategy__likely
-	@);
-		print_code($indent, qq @
-		#	return overflow__likely_add_$type->{sfx}_internal(a, b, r, a_is_const, b_is_const);
-		@);
-	print_pp($indent, qq @
-	#elif defined overflow__strategy__unlikely
-	@);
-		print_code($indent, qq @
-		#	return overflow__unlikely_add_$type->{sfx}_internal(a, b, r, a_is_const, b_is_const);
-		@);
-	print_pp($indent, qq @
-	#else /* overflow__strategy__default */
-	@);
-		print_code($indent, qq @
-		#	if (a_is_const || b_is_const)
-		#		return overflow__add_$type->{sfx}_strategy_precheck(a, b, r, a_is_const, b_is_const);
-		@);
-		for my $largetype (get_larger_types($type)) {
-			print_code($indent, qq @
-			#	else if (sizeof($largetype->{ctype}) > sizeof($type->{ctype}) && overflow__is_fast_type($largetype->{ctype}))
-			#		return overflow__add_$type->{sfx}_strategy_largetype_$largetype->{sfx}(a, b, r, a_is_const, b_is_const);
-			@);
-		}
-		print_code($indent, qq @
-		#	else
-		#		return overflow__add_$type->{sfx}_strategy_precheck(a, b, r, a_is_const, b_is_const);
-		@);
-	print_pp($indent, qq @
-	#endif /* overflow__strategy__default */
-	@);
-	print_code($indent, qq @
-	#}
-	@);
-	print "\n";
 
 	print_pp($indent, qq @
 	#define overflow_add_$type->{sfx}(a, b, r)          overflow__add_$type->{sfx}_internal((a), (b), (r), overflow__constant(a), overflow__constant(b))
@@ -595,111 +502,23 @@ sub dump_custom_sub {
 			@);
 			print "\n";
 		}
-	}
-
-	print_code($indent, qq @
-	#overflow__private overflow__nonnull_arg(3) overflow__must_check
-	#int overflow__likely_sub_$type->{sfx}_internal($type->{ctype} a, $type->{ctype} b, $type->{ctype} *r, int a_is_const, int b_is_const)
-	#{
-	#	return overflow__expect(overflow__sub_$type->{sfx}_strategy_precheck(a, b, r, a_is_const, b_is_const), 1);
-	#}
-	@);
-	print "\n";
-
-	print_code($indent, qq @
-	#overflow__private overflow__nonnull_arg(3) overflow__must_check
-	#int overflow__unlikely_sub_$type->{sfx}_internal($type->{ctype} a, $type->{ctype} b, $type->{ctype} *r, int a_is_const, int b_is_const)
-	#{
-	#	return overflow__expect(overflow__sub_$type->{sfx}_strategy_precheck(a, b, r, a_is_const, b_is_const), 0);
-	#}
-	@);
-	print "\n";
-
-	print_code($indent, qq @
-	#overflow__private overflow__nonnull_arg(3) overflow__must_check
-	#int overflow__sub_$type->{sfx}_internal($type->{ctype} a, $type->{ctype} b, $type->{ctype} *r, int a_is_const, int b_is_const)
-	#{
-	@);
-	print_pp($indent, qq @
-	#if defined overflow__strategy_precheck
-	@);
+	} else {
 		print_code($indent, qq @
+		#overflow__private overflow__nonnull_arg(3) overflow__must_check
+		#int overflow__sub_$type->{sfx}_strategy_largetype($type->{ctype} a, $type->{ctype} b, $type->{ctype} *r, int a_is_const, int b_is_const)
+		#{
 		#	return overflow__sub_$type->{sfx}_strategy_precheck(a, b, r, a_is_const, b_is_const);
+		#}
 		@);
-	if (!$type->{signed}) {
-		print_pp($indent, qq @
-		#elif defined overflow__strategy_postcheck
-		@);
-			print_code($indent, qq @
-			#	return overflow__sub_$type->{sfx}_strategy_postcheck(a, b, r, a_is_const, b_is_const);
-			@);
+		print "\n";
 	}
-	if ($type->{signed}) {
-		print_pp($indent, qq @
-		#elif defined overflow__strategy_largetype
-		@);
-			print_code($indent, qq @
-			#	if (0)
-			#		return 1;
-			@);
-			for my $largetype (get_larger_types($type)) {
-				print_code($indent, qq @
-				#	else if (sizeof($largetype->{ctype}) > sizeof($type->{ctype}))
-				#		return overflow__sub_$type->{sfx}_strategy_largetype_$largetype->{sfx}(a, b, r, a_is_const, b_is_const);
-				@)
-			}
-			print_code($indent, qq @
-			#	else
-			#		return overflow__sub_$type->{sfx}_strategy_precheck(a, b, r, a_is_const, b_is_const);
-			@);
+
+	for my $prefix (@prefixes) {
+		my $op = (grep { $_->{name} eq "sub" } @ops)[0];
+		generate_largetype($indent, $prefix, $type, $op) if $type->{signed};
+		generate_default_strategy($indent, $prefix, $type, $op);
+		generate_internal($indent, $prefix, $type, $op);
 	}
-	print_pp($indent, qq @
-	#elif defined overflow__strategy__lib
-	@);
-		print_code($indent, qq @
-		#	return !sop_sub(r, a, b);
-		@);
-	print_pp($indent, qq @
-	#elif defined overflow__strategy__likely
-	@);
-		print_code($indent, qq @
-		#	return overflow__likely_sub_$type->{sfx}_internal(a, b, r, a_is_const, b_is_const);
-		@);
-	print_pp($indent, qq @
-	#elif defined overflow__strategy__unlikely
-	@);
-		print_code($indent, qq @
-		#	return overflow__unlikely_sub_$type->{sfx}_internal(a, b, r, a_is_const, b_is_const);
-		@);
-	print_pp($indent, qq @
-	#else /* overflow__strategy__default */
-	@);
-		if ($type->{signed}) {
-			print_code($indent, qq @
-			#	if (a_is_const || b_is_const)
-			#		return overflow__sub_$type->{sfx}_strategy_precheck(a, b, r, a_is_const, b_is_const);
-			@);
-			for my $largetype (get_larger_types($type)) {
-				print_code($indent, qq @
-				#	else if (sizeof($largetype->{ctype}) > sizeof($type->{ctype}) && overflow__is_fast_type($largetype->{ctype}))
-				#		return overflow__sub_$type->{sfx}_strategy_largetype_$largetype->{sfx}(a, b, r, a_is_const, b_is_const);
-				@)
-			}
-			print_code($indent, qq @
-			#	else
-			#		return overflow__sub_$type->{sfx}_strategy_precheck(a, b, r, a_is_const, b_is_const);
-			@);
-		} else {
-			print_code($indent, qq @
-			#	return overflow__sub_$type->{sfx}_strategy_precheck(a, b, r, a_is_const, b_is_const);
-			@);
-		}
-	print_pp($indent, qq @
-	#endif /* overflow__strategy__default */
-	@);
-	print_code($indent, qq @
-	#}
-	@);
 	print "\n";
 
 	print_pp($indent, qq @
@@ -857,180 +676,12 @@ sub dump_custom_mul {
 		print "\n";
 	}
 
-	print_code($indent, qq @
-	#overflow__private overflow__nonnull_arg(3) overflow__must_check
-	#int overflow__likely_mul_$type->{sfx}_internal($type->{ctype} a, $type->{ctype} b, $type->{ctype} *r, int a_is_const, int b_is_const)
-	#{
-	@);
-		print_code($indent, qq @
-		#	if ((a_is_const && !a) || (b_is_const && !b))
-		#		return (*r = ($type->{ctype}) 0, 0);
-		#	else if ((a_is_const && b_is_const) || (a_is_const && a > 0 && overflow__is_pow2(a)) || (b_is_const && b > 0 && overflow__is_pow2(b)))
-		#		return overflow__expect(overflow__mul_$type->{sfx}_strategy_precheck(a, b, r, a_is_const, b_is_const), 1);
-		@);
-		for my $largetype (get_larger_types($type)) {
-			print_code($indent, qq @
-			#	else if (sizeof($largetype->{ctype}) >= 2*sizeof($type->{ctype}) && overflow__is_fast_type($largetype->{ctype}))
-			#		return overflow__expect(overflow__mul_$type->{sfx}_strategy_largetype_$largetype->{sfx}(a, b, r, a_is_const, b_is_const), 1);
-			@);
-		}
-		if (!$type->{signed}) {
-			print_code($indent, qq @
-			#	else if (a_is_const || b_is_const)
-			#		return overflow__expect(overflow__mul_$type->{sfx}_strategy_precheck(a, b, r, a_is_const, b_is_const), 1);
-			#	else
-			#		return overflow__expect(overflow__mul_$type->{sfx}_strategy_postcheck(a, b, r, a_is_const, b_is_const), 1);
-			@);
-		} else {
-			print_code($indent, qq @
-			#	else
-			#		return overflow__expect(overflow__mul_$type->{sfx}_strategy_precheck(a, b, r, a_is_const, b_is_const), 1);
-			@);
-		}
-	print_code($indent, qq @
-	#}
-	@);
-	print "\n";
-
-	print_code($indent, qq @
-	#overflow__private overflow__nonnull_arg(3) overflow__must_check
-	#int overflow__unlikely_mul_$type->{sfx}_internal($type->{ctype} a, $type->{ctype} b, $type->{ctype} *r, int a_is_const, int b_is_const)
-	#{
-	@);
-		print_code($indent, qq @
-		#	if ((a_is_const && !a) || (b_is_const && !b))
-		#		return (*r = ($type->{ctype}) 0, 0);
-		#	else if (a_is_const && a == ($type->{ctype}) 1)
-		#		return (*r = b, 0);
-		#	else if (b_is_const && b == ($type->{ctype}) 1)
-		#		return (*r = a, 0);
-		#	else if ((a_is_const && b_is_const) || (a_is_const && a > 0 && overflow__is_pow2(a)) || (b_is_const && b > 0 && overflow__is_pow2(b)))
-		#		return overflow__expect(overflow__mul_$type->{sfx}_strategy_precheck(a, b, r, a_is_const, b_is_const), 0);
-		@);
-		for my $largetype (get_larger_types($type)) {
-			print_code($indent, qq @
-			#	else if (sizeof($largetype->{ctype}) >= 2*sizeof($type->{ctype}) && overflow__is_fast_type($largetype->{ctype}))
-			#		return overflow__expect(overflow__mul_$type->{sfx}_strategy_largetype_$largetype->{sfx}(a, b, r, a_is_const, b_is_const), 0);
-			@);
-		}
-		if (!$type->{signed}) {
-			print_code($indent, qq @
-			#	else if (a_is_const || b_is_const)
-			#		return overflow__expect(overflow__mul_$type->{sfx}_strategy_precheck(a, b, r, a_is_const, b_is_const), 0);
-			#	else
-			#		return overflow__expect(overflow__mul_$type->{sfx}_strategy_partial(a, b, r, a_is_const, b_is_const), 0);
-			@);
-		} else {
-			print_code($indent, qq @
-			#	else
-			#		return overflow__expect(overflow__mul_$type->{sfx}_strategy_precheck(a, b, r, a_is_const, b_is_const), 0);
-			@);
-		}
-	print_code($indent, qq @
-	#}
-	@);
-	print "\n";
-
-	print_code($indent, qq @
-	#overflow__private overflow__nonnull_arg(3) overflow__must_check
-	#int overflow__mul_$type->{sfx}_internal($type->{ctype} a, $type->{ctype} b, $type->{ctype} *r, int a_is_const, int b_is_const)
-	#{
-	@);
-	print_pp($indent, qq @
-	#if defined overflow__strategy_precheck
-	@);
-		print_code($indent, qq @
-		#	return overflow__mul_$type->{sfx}_strategy_precheck(a, b, r, a_is_const, b_is_const);
-		@);
-	if (!$type->{signed}) {
-		print_pp($indent, qq @
-		#elif defined overflow__strategy_postcheck
-		@);
-			print_code($indent, qq @
-			#	return overflow__mul_$type->{sfx}_strategy_postcheck(a, b, r, a_is_const, b_is_const);
-			@);
+	for my $prefix (@prefixes) {
+		my $op = (grep { $_->{name} eq "mul" } @ops)[0];
+		generate_largetype($indent, $prefix, $type, $op);
+		generate_default_strategy($indent, $prefix, $type, $op);
+		generate_internal($indent, $prefix, $type, $op);
 	}
-	print_pp($indent, qq @
-	#elif defined overflow__strategy_largetype
-	@);
-		print_code($indent, qq @
-		#	if (0)
-		#		return 1;
-		@);
-		for my $largetype (get_larger_types($type)) {
-			print_code($indent, qq @
-			#	else if (sizeof($largetype->{ctype}) >= 2*sizeof($type->{ctype}))
-			#		return overflow__mul_$type->{sfx}_strategy_largetype_$largetype->{sfx}(a, b, r, a_is_const, b_is_const);
-			@);
-		}
-		print_code($indent, qq @
-		#	else
-		#		return overflow__mul_$type->{sfx}_strategy_precheck(a, b, r, a_is_const, b_is_const);
-		@);
-	if (!$type->{signed}) {
-		print_pp($indent, qq @
-		#elif defined overflow__strategy_partial
-		@);
-			print_code($indent, qq @
-			#	return overflow__mul_$type->{sfx}_strategy_partial(a, b, r, a_is_const, b_is_const);
-			@);
-	}
-	print_pp($indent, qq @
-	#elif defined overflow__strategy__lib
-	@);
-		print_code($indent, qq @
-		#	return !sop_mul(r, a, b);
-		@);
-	print_pp($indent, qq @
-	#elif defined overflow__strategy__likely
-	@);
-		print_code($indent, qq @
-		#	return overflow__likely_mul_$type->{sfx}_internal(a, b, r, a_is_const, b_is_const);
-		@);
-	print_pp($indent, qq @
-	#elif defined overflow__strategy__unlikely
-	@);
-		print_code($indent, qq @
-		#	return overflow__unlikely_mul_$type->{sfx}_internal(a, b, r, a_is_const, b_is_const);
-		@);
-	print_pp($indent, qq @
-	#else /* overflow__strategy__default */
-	@);
-		print_code($indent, qq @
-		#	if ((a_is_const && !a) || (b_is_const && !b))
-		#		return (*r = ($type->{ctype}) 0, 0);
-		#	else if (a_is_const && a == ($type->{ctype}) 1)
-		#		return (*r = b, 0);
-		#	else if (b_is_const && b == ($type->{ctype}) 1)
-		#		return (*r = a, 0);
-		#	else if ((a_is_const && b_is_const) || (a_is_const && a > 0 && overflow__is_pow2(a)) || (b_is_const && b > 0 && overflow__is_pow2(b)))
-		#		return overflow__mul_$type->{sfx}_strategy_precheck(a, b, r, a_is_const, b_is_const);
-		@);
-		for my $largetype (get_larger_types($type)) {
-			print_code($indent, qq @
-			#	else if (sizeof($largetype->{ctype}) >= 2*sizeof($type->{ctype}) && overflow__is_fast_type($largetype->{ctype}))
-			#		return overflow__mul_$type->{sfx}_strategy_largetype_$largetype->{sfx}(a, b, r, a_is_const, b_is_const);
-			@);
-		}
-		if (!$type->{signed}) {
-			print_code($indent, qq @
-			#	else if (a_is_const || b_is_const)
-			#		return overflow__mul_$type->{sfx}_strategy_precheck(a, b, r, a_is_const, b_is_const);
-			#	else
-			#		return overflow__mul_$type->{sfx}_strategy_partial(a, b, r, a_is_const, b_is_const);
-			@);
-		} else {
-			print_code($indent, qq @
-			#	else
-			#		return overflow__mul_$type->{sfx}_strategy_precheck(a, b, r, a_is_const, b_is_const);
-			@);
-		}
-	print_pp($indent, qq @
-	#endif /* overflow__strategy__default */
-	@);
-	print_code($indent, qq @
-	#}
-	@);
 	print "\n";
 
 	print_pp($indent, qq @
@@ -1157,6 +808,137 @@ sub dump_generic {
 	#		endif
 	#	endif
 	#endif
+	@);
+	print "\n";
+}
+
+sub read_eval_data {
+	my ($filename) = @_;
+	open my $in, "<$filename" or die "failed to open $filename: $!\n";
+	my $line = <$in>;
+	defined $line or die "failed to read $filename: $!\n";
+	my ($avg, $min, $max) = split /[ ]+/, $line;
+	close $in;
+	return ($avg, $min, $max);
+}
+
+sub strategy_implemented {
+	my ($type, $op, $strat) = @_;
+	my $name = ($type->{signed} ? "s" : "u") . $op->{name};
+	return grep { $name eq $_  } @{ $strat->{impl} };
+}
+
+sub find_best_strategy {
+	my ($prefix, $type, $op, $vc) = @_;
+	my @w = @{ $prefix->{weights} };
+	my %data = ();
+	for my $strat (@strategies) {
+		my $s = $strat->{name};
+		next if !strategy_implemented($type, $op, $strat);
+		my $filename = "benchmarks/...$vc->{name}-$op->{name}-$type->{sfx}-$s.data";
+		my $ofilename = "benchmarks/...$vc->{name}-$op->{name}-overflow-$type->{sfx}-$s.data";
+		my ($avg, $min, $max) = read_eval_data($filename);
+		my ($oavg, $omin, $omax) = read_eval_data($ofilename);
+		$data{$s} = $avg * $w[0] + $min * $w[1] + $max * $w[2] + $oavg * $w[3] + $omin * $w[4] + $omax * $w[5];
+	}
+	my $best = (sort { $data{$a} <=> $data{$b} } keys %data)[0];
+	return $best;
+}
+
+sub generate_default_strategy {
+	my ($indent, $prefix, $type, $op) = @_;
+	if (!$GENERATE_DEFAULT) {
+		print_code($indent, qq @
+		#overflow__private overflow__nonnull_arg(3) overflow__must_check
+		#int overflow_$prefix->{name}_$op->{name}_$type->{sfx}_strategy_default($type->{ctype} a, $type->{ctype} b, $type->{ctype} *r, int a_is_const, int b_is_const)
+		#{
+		#	return overflow__$op->{name}_$type->{sfx}_strategy_precheck(a, b, r, a_is_const, b_is_const);
+		#}
+		@);
+		print "\n";
+		return;
+	}
+	my $expect = $prefix->{name} ? "overflow_$prefix->{name}" : "";
+	print_code($indent, qq @
+	#overflow__private overflow__nonnull_arg(3) overflow__must_check
+	#int overflow_$prefix->{name}_$op->{name}_$type->{sfx}_strategy_default($type->{ctype} a, $type->{ctype} b, $type->{ctype} *r, int a_is_const, int b_is_const)
+	#{
+	@);
+	for my $vc (@vc) {
+		my $strat = find_best_strategy($prefix, $type, $op, $vc);
+		print_code($indent, qq @
+		#	if ($vc->{a} && $vc->{b})
+		#		return $expect(overflow__$op->{name}_$type->{sfx}_strategy_$strat(a, b, r, a_is_const, b_is_const));
+		@);
+	}
+	print_code($indent, qq @
+	#	/* dead code */
+	#	overflow__assume(0);
+	#	return 1;
+	#}
+	@);
+	print "\n";
+}
+
+sub generate_largetype {
+	my ($indent, $prefix, $type, $op) = @_;
+	print_code($indent, qq @
+	#overflow__private overflow__nonnull_arg(3) overflow__must_check
+	#int overflow_$prefix->{name}_$op->{name}_$type->{sfx}_strategy_largetype($type->{ctype} a, $type->{ctype} b, $type->{ctype} *r, int a_is_const, int b_is_const)
+	#{
+	@);
+	if ($op->{name} eq "sub" and !$type->{signed}) {
+		print_code($indent, qq @
+		#	/* unsigned subtraction has no largetype implementation */
+		#	return overflow__$op->{name}_$type->{sfx}_strategy_precheck(a, b, r, a_is_const, b_is_const);
+		@);
+	} else {
+		for my $largetype (get_larger_types($type)) {
+			print_code($indent, qq @
+			#	if (overflow__$op->{name}_suitable_largetype($largetype->{ctype}, $type->{ctype}))
+			#		return overflow__$op->{name}_$type->{sfx}_strategy_largetype_$largetype->{sfx}(a, b, r, a_is_const, b_is_const);
+			@);
+		}
+	}
+	print_code($indent, qq @
+	#	/* precheck is always possible, use that as fallback */
+	#	return overflow__$op->{name}_$type->{sfx}_strategy_precheck(a, b, r, a_is_const, b_is_const);
+	#}
+	@);
+	print "\n";
+}
+
+sub generate_internal {
+	my ($indent, $prefix, $type, $op) = @_;
+	print_code($indent, qq @
+	#overflow__private overflow__nonnull_arg(3) overflow__must_check
+	#int overflow_$prefix->{name}_$op->{name}_$type->{sfx}_internal($type->{ctype} a, $type->{ctype} b, $type->{ctype} *r, int a_is_const, int b_is_const)
+	#{
+	@);
+	print_pp($indent, qq @
+	#	if 0 /* syntax hack */
+	@);
+	for my $strat (@strategies) {
+		next if !strategy_implemented($type, $op, $strat);
+		my $s = $strat->{name};
+		print_pp($indent, qq @
+		#	elif defined overflow__strategy_$s
+		@);
+			print_code($indent, qq @
+			#		return overflow__$op->{name}_$type->{sfx}_strategy_$s(a, b, r, a_is_const, b_is_const);
+			@);
+	}
+	print_pp($indent, qq @
+	#	else
+	@);
+	print_code($indent, qq @
+	#		return overflow_$prefix->{name}_$op->{name}_$type->{sfx}_strategy_default(a, b, r, a_is_const, b_is_const);
+	@);
+	print_pp($indent, qq @
+	#	endif
+	@);
+	print_code($indent, qq @
+	#}
 	@);
 	print "\n";
 }

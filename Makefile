@@ -79,20 +79,16 @@ LATEX    = pdflatex </dev/null -interaction=nonstopmode
 CFLAGS  += $(OPTIMIZE) $(WARN)
 
 TGSFX = i u li lu lli llu i8 u8 i16 u16 i32 u32 i64 u64
-STRAT = _default _likely _unlikely precheck postcheck largetype partial
+STRAT = precheck postcheck largetype partial
 VC    = cc cv vc vv
-
-ifneq "$(strip $(wildcard safe_iop.h))" ""
-	STRAT += _lib
-endif
 
 TSRC := $(notdir $(wildcard $(TDIR:%=%/*.c)))
 BSRC := $(notdir $(wildcard $(BDIR:%=%/*.c)))
 CSRC := $(notdir $(wildcard ./*.c))
 
-TGPL := $(notdir $(wildcard $(TDIR:%=%/*.[ch].pl)))
-BGPL := $(notdir $(wildcard $(BDIR:%=%/*.[ch].pl)))
-CGPL := $(notdir $(wildcard ./*.[ch].pl))
+TGPL := $(notdir $(wildcard $(TDIR:%=%/*.[chx].pl)))
+BGPL := $(notdir $(wildcard $(BDIR:%=%/*.[chx].pl)))
+CGPL := $(notdir $(wildcard ./*.[chx].pl))
 
 TGEN := $(TGPL:%.pl=%)
 BGEN := $(BGPL:%.pl=%)
@@ -295,6 +291,8 @@ $(DATA): %.data: %-bin
 	$Q ./scripts/eval.sh $< > $@
 
 
+overflow.h: $(DATA)
+
 $(foreach S, $(TGSFX), $(TDIR)/.%-$(S:%=%).c): $(TDIR)/%.tg
 	@echo "GEN  [T]  $(*:%=%).tg"
 	$Q $(PERL) scripts/mktg.pl $<
@@ -312,6 +310,10 @@ $(foreach V, $(VC), $(TDIR)/.$(V:%=%)-%): $(TDIR)/%.vc
 	$Q $(PERL) scripts/mkvc.pl $<
 
 $(filter %.h, $(GEN)): %.h: %.h.pl
+	@echo "GEN  [PL] $(*:%=%).h"
+	$Q $(PERL) $< > $@
+
+$(filter %.x, $(GEN)): %.x: %.x.pl
 	@echo "GEN  [PL] $(*:%=%).h"
 	$Q $(PERL) $< > $@
 

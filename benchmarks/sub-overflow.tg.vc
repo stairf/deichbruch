@@ -26,43 +26,36 @@
  *****/
 
 /*
- * common.h
+ * sub-overflow.tg.vc
  */
-#ifndef __COMMON_H__
-#define __COMMON_H__
+#include "common.h"
 
-#include "overflow.x"
+static void step(void)
+{
+	TYPE r0, r1, r2, r3, r4, r5, r6, r7, r8, r9;
+	int o = 0;
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <errno.h>
-#include <string.h>
+	start();
+	o ^= overflow_sub(P0(MIN), P1(2), &r0);
+	o ^= overflow_sub(P0(MIN+2), P1(3), &r1);
+	o ^= overflow_sub(P0(MIN+5), P1(MAX), &r2);
+	o ^= overflow_sub(P0(MIN), P1(MAX-7), &r3);
+	o ^= overflow_sub(P0(MIN/2), P1(MAX/2+5), &r4);
+	o ^= overflow_sub(P0(MIN/2-5), P1(MAX/2+1), &r5);
+#ifdef SIGNED
+	o ^= overflow_sub(P0(-1), P1(MAX), &r6);
+	o ^= overflow_sub(P0(-2), P1(MAX-1), &r7);
+	o ^= overflow_sub(P0(-1), P1(MAX/2), &r8);
+	o ^= overflow_sub(P0(-5), P1(MAX/2), &r9);
+#else
+	o ^= overflow_sub(P0(MAX-1), P1(MAX), &r6);
+	o ^= overflow_sub(P0(MAX-2), P1(MAX-1), &r7);
+	o ^= overflow_sub(P0(1), P1(MAX), &r8);
+	o ^= overflow_sub(P0(0), P1(MAX-1), &r9);
+#endif
+	end();
 
-#define dieX(file,line,func,...) do { \
-		fprintf(stderr, "%s:%u:%s(): error: ", file, line, func); \
-		fprintf(stderr, __VA_ARGS__); \
-		fprintf(stderr, ": %s\n", strerror(errno)); \
-		exit(EXIT_FAILURE); \
-	} while (0)
+	effect(o);
 
-#define termX(file,line,func,...) do { \
-		fprintf(stderr, "%s:%u:%s(): error: ", file, line, func); \
-		fprintf(stderr, __VA_ARGS__); \
-		fprintf(stderr, "\n"); \
-		exit(EXIT_FAILURE); \
-	} while (0)
+}
 
-#define AT const char *_file, unsigned _line, const char *_func
-#define die(...) dieX(__FILE__,__LINE__,__func__,__VA_ARGS__)
-#define term(...) termX(__FILE__,__LINE__,__func__,__VA_ARGS__)
-#define dieAt(...) dieX(_file, _line, _func, __VA_ARGS__)
-#define termAt(...) termX(_file, _line, _func, __VA_ARGS__)
-
-extern void ignore(int x);
-extern int nothing(void);
-
-#define effect(x) (ignore((int)(x)))
-#define just(x) ((x)^nothing())
-
-
-#endif /* __COMMON_H__ */
