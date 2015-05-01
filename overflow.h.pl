@@ -146,11 +146,6 @@ sub dump_try_builtin {
 sub dump_common_macros {
 	my ($indent) = @_;
 	print_pp($indent, qq @
-	#if defined overflow__strategy__lib
-	#	define typeof __typeof__
-	#	include "safe_iop.h"
-	#endif
-
 	#if defined __clang__
 	#	if __has_attribute(__always_inline__) && __has_attribute(__unused__)
 	#		define overflow__private static inline __attribute__((__always_inline__,__unused__))
@@ -205,20 +200,6 @@ sub dump_common_macros {
 
 	#ifndef overflow__constant
 	#	define overflow__constant(x) 0 /* fall-back: this disables some optimizations */
-	#endif
-
-	#if defined __clang__
-	#	if __has_builtin(__builtin_choose_expr)
-	#		define overflow__choose(c,a,b) __builtin_choose_expr((c), (a), (b))
-	#	endif
-	#elif defined __GNUC__
-	#	if __GNUC__ >= 4 /* TODO */
-	#		define overflow__choose(c,a,b) __builtin_choose_expr((c), (a), (b))
-	#	endif
-	#endif
-
-	#ifndef overflow__choose
-	#	define overflow__choose(c,a,b) (c) ? (a) : (b)
 	#endif
 
 	#if defined __clang__
@@ -312,8 +293,6 @@ sub dump_custom_add {
 	print_code($indent, qq @
 	#	}
 	#	if (flag) {
-	#		//overflow__assume(a > $type->{max} - b || a < $type->{min} - b);
-	#		//overflow__assume(b > $type->{max} - a || b < $type->{min} - a);
 	#		return 1;
 	#	}
 	#	*r = a + b;
@@ -744,14 +723,6 @@ sub dump_mul {
 
 sub dump_generic {
 	my ($indent, $op) = @_;
-	#for my $t (@types) {
-	#	print_pp($indent, qq @
-	#	#ifndef overflow_$op->{name}_$t->{sfx}
-	#	#	define overflow_$op->{name}_$t->{sfx}(a, b, r) overflow__$op->{name}_$t->{sfx}_internal((a),(b),(r), overflow__constant(a), overflow__constant(b))
-	#	#endif
-	#	@);
-	#	print "\n";
-	#}
 	print_pp($indent, qq @
 	#ifndef overflow_$op->{name}
 	#	if defined __clang__
@@ -761,11 +732,11 @@ sub dump_generic {
 	#			define overflow_unlikely_$op->{name}(a, b, r) overflow__expect(__builtin_$op->{name}_overflow((a), (b), (r)), 0)
 	#		elif __has_builtin(__builtin_choose_expr) && __has_builtin(__builtin_types_compatible_p)
 	@);
-	for my $prefix ("overflow", "overflow_likely", "overflow_unlikely") {
-		print_define($indent . "\t\t\t", "${prefix}_$op->{name}(a, b, r)",
+	for my $prefix (@prefixes) {
+		print_define($indent . "\t\t\t", "overflow$prefix->{name}_$op->{name}(a, b, r)",
 			(join "", map { qq @
 			#	__builtin_choose_expr(__builtin_types_compatible_p(__typeof__(*(r)), $_->{ctype}),
-			#		${prefix}_$op->{name}_$_->{sfx}((a), (b), ($_->{ctype} *)(r)),
+			#		overflow$prefix->{name}_$op->{name}_$_->{sfx}((a), (b), ($_->{ctype} *)(r)),
 			@ } @types)
 			. "#\t((void)0)\n"
 			. (")" x scalar @types)
@@ -781,11 +752,11 @@ sub dump_generic {
 	#			define overflow_unlikely_$op->{name}(a, b, r) overflow__expect(__builtin_$op->{name}_overflow((a), (b), (r)), 0)
 	#		elif __GNUC__ >= 4 /* TODO  */
 	@);
-	for my $prefix ("overflow", "overflow_likely", "overflow_unlikely") {
-		print_define($indent . "\t\t\t", "${prefix}_$op->{name}(a, b, r)",
+	for my $prefix (@prefixes) {
+		print_define($indent . "\t\t\t", "overflow$prefix->{name}_$op->{name}(a, b, r)",
 			(join "", map { qq @
 			#	__builtin_choose_expr(__builtin_types_compatible_p(__typeof__(*(r)), $_->{ctype}),
-			#		${prefix}_$op->{name}_$_->{sfx}((a), (b), ($_->{ctype} *)(r)),
+			#		overflow$prefix->{name}_$op->{name}_$_->{sfx}((a), (b), ($_->{ctype} *)(r)),
 			@ } @types)
 			. "#\t((void)0)\n"
 			. (")" x scalar @types)
@@ -882,18 +853,20 @@ sub generate_largetype {
 	#int overflow_$prefix->{name}_$op->{name}_$type->{sfx}_strategy_largetype($type->{ctype} a, $type->{ctype} b, $type->{ctype} *r, int a_is_const, int b_is_const)
 	#{
 	@);
-	if ($op->{name} eq "sub" and !$type->{signed}) {
+	if (!strategy_implemented($type, $op, (grep { $_->{name} eq "largetype" } @strategies)[0])) {
 		print_code($indent, qq @
-		#	/* unsigned subtraction has no largetype implementation */
+		#	/* largetype strategy not implemented */
 		#	return overflow__$op->{name}_$type->{sfx}_strategy_precheck(a, b, r, a_is_const, b_is_const);
+		#}
 		@);
-	} else {
-		for my $largetype (get_larger_types($type)) {
-			print_code($indent, qq @
-			#	if (overflow__$op->{name}_suitable_largetype($largetype->{ctype}, $type->{ctype}))
-			#		return overflow__$op->{name}_$type->{sfx}_strategy_largetype_$largetype->{sfx}(a, b, r, a_is_const, b_is_const);
-			@);
-		}
+		print "\n";
+		return;
+	}
+	for my $largetype (get_larger_types($type)) {
+		print_code($indent, qq @
+		#	if (overflow__$op->{name}_suitable_largetype($largetype->{ctype}, $type->{ctype}))
+		#		return overflow__$op->{name}_$type->{sfx}_strategy_largetype_$largetype->{sfx}(a, b, r, a_is_const, b_is_const);
+		@);
 	}
 	print_code($indent, qq @
 	#	/* precheck is always possible, use that as fallback */
@@ -971,10 +944,10 @@ sub dump_file_body {
 
 	print "\n";
 	print "#ifndef OVERFLOW_LAZY_GENERIC\n\n";
-	for my $p ("overflow", "overflow_likely", "overflow_unlikely") {
+	for my $prefix (@prefixes) {
 		for my $o (@ops) {
-			print "#\tifndef ${p}_$o->{name}\n";
-			print "#\t\terror \"No compiler support for ${p}_$o->{name} macro\"\n";
+			print "#\tifndef overflow$prefix->{name}_$o->{name}\n";
+			print "#\t\terror \"No compiler support for overflow$prefix->{name}_$o->{name} macro\"\n";
 			print "#\tendif\n\n"
 		}
 	}
