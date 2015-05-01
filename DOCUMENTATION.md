@@ -317,25 +317,25 @@ Configuration
 
 Deichbruch allows a minimal configuration using preprocessor macros.
 
-	* `OVERFLOW_LAZY_GENERIC`
+ * `OVERFLOW_LAZY_GENERIC`
 
-		Do not raise a compiler warning when type-generic macros are not
-		supported. Then, it is possible that the Deichbruch header file does
-		not define the following macros:
+    Do not raise a compiler warning when type-generic macros are not
+    supported. Then, it is possible that the Deichbruch header file does
+    not define the following macros:
 
-		 - overflow_add
-		 - overflow_sub
-		 - overflow_mul
-		 - overflow_likely_add
-		 - overflow_likely_sub
-		 - overflow_likely_mul
-		 - overflow_unlikely_add
-		 - overflow_unlikely_sub
-		 - overflow_unlikely_mul
+     - overflow_add
+     - overflow_sub
+     - overflow_mul
+     - overflow_likely_add
+     - overflow_likely_sub
+     - overflow_likely_mul
+     - overflow_unlikely_add
+     - overflow_unlikely_sub
+     - overflow_unlikely_mul
 
 
-		See above for a detailled description of the macros. You can still use
-		the non-generic macros with type suffix.
+    See above for a detailled description of the macros. You can still use
+    the non-generic macros with type suffix.
 
 Future versions might support more configuration variables.
 
@@ -345,9 +345,9 @@ Namespaces
 
 Deichbruch uses the following namespaces:
 
-	- `overflow_*` for all public functions and function-like macros
-	- `OVERFLOW_*` for externally visible macros
-	- `overflow__*` for everything internal
+ - `overflow_*` for all public functions and function-like macros
+ - `OVERFLOW_*` for externally visible macros
+ - `overflow__*` for everything internal
 
 Do not rely on any of the internal `overflow__*` macros because they might
 change in future versions without any warning.
