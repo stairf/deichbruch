@@ -251,9 +251,9 @@ sub dump_common_macros {
 	#define overflow__likely(x)   overflow__expect((x), 1)
 	#define overflow__unlikely(x) overflow__expect((x), 0)
 
-	#define overflow__add_suitable_largetype(largetype, type) (sizeof(largetype) > sizeof(type))
-	#define overflow__sub_suitable_largetype(largetype, type) (sizeof(largetype) > sizeof(type))
-	#define overflow__mul_suitable_largetype(largetype, type) (sizeof(largetype) >= 2*sizeof(type))
+	#define overflow__add_suitable_largetype(lmax, max, lmin, min) (lmax-max >= max && lmin-min <= min)
+	#define overflow__sub_suitable_largetype(lmax, max, lmin, min) (lmax+min >= max && lmin+max <= min)
+	#define overflow__mul_suitable_largetype(lmax, max, lmin, min) (lmax/max >= max && lmin/max <= min)
 
 	#include <stdint.h>
 	#include <limits.h>
@@ -864,7 +864,7 @@ sub generate_largetype {
 	}
 	for my $largetype (get_larger_types($type)) {
 		print_code($indent, qq @
-		#	if (overflow__$op->{name}_suitable_largetype($largetype->{ctype}, $type->{ctype}))
+		#	if (overflow__$op->{name}_suitable_largetype($largetype->{max}, $type->{max}, $largetype->{min}, $type->{min}))
 		#		return overflow__$op->{name}_$type->{sfx}_strategy_largetype_$largetype->{sfx}(a, b, r, a_is_const, b_is_const);
 		@);
 	}
