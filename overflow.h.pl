@@ -253,7 +253,7 @@ sub dump_common_macros {
 
 	#define overflow__add_suitable_largetype(lmax, max, lmin, min) (lmax-max >= max && lmin-min <= min)
 	#define overflow__sub_suitable_largetype(lmax, max, lmin, min) (lmax+min >= max && lmin+max <= min)
-	#define overflow__mul_suitable_largetype(lmax, max, lmin, min) (lmax/max >= max && lmin/max <= min)
+	#define overflow__mul_suitable_largetype(lmax, max, lmin, min) (lmax/max >= max && lmin/max <= min && (!min || lmax/min <= min))
 
 	#include <stdint.h>
 	#include <limits.h>
