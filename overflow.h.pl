@@ -864,7 +864,7 @@ sub generate_largetype {
 	}
 	for my $largetype (get_larger_types($type)) {
 		print_code($indent, qq @
-		#	if (overflow__$op->{name}_suitable_largetype($largetype->{max}, $type->{max}, $largetype->{min}, $type->{min}))
+		#	if (overflow__$op->{name}_suitable_largetype($largetype->{max}, $type->{max}, $largetype->{min}, $type->{min}) && overflow__is_fast_type($largetype->{ctype}))
 		#		return overflow__$op->{name}_$type->{sfx}_strategy_largetype_$largetype->{sfx}(a, b, r, a_is_const, b_is_const);
 		@);
 	}
