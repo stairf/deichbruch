@@ -265,7 +265,7 @@ sub dump_custom_add {
 	my ($indent, $type) = @_;
 	print_code($indent, qq @
 	#overflow__private overflow__nonnull_arg(3) overflow__must_check
-	#int overflow__add_$type->{sfx}_strategy_precheck($type->{ctype} a, $type->{ctype} b, $type->{ctype} *r, int a_is_const, int b_is_const)
+	#int overflow__add_$type->{sfx}_strategy_precheck(const $type->{ctype} a, const $type->{ctype} b, $type->{ctype} *const restrict r, const int a_is_const, const int b_is_const)
 	#{
 	#	(void) b_is_const;
 	#	int flag = 0;
@@ -304,7 +304,7 @@ sub dump_custom_add {
 	for my $largetype (get_larger_types($type)) {
 		print_code($indent, qq @
 		#overflow__private overflow__nonnull_arg(3) overflow__must_check
-		#int overflow__add_$type->{sfx}_strategy_largetype_$largetype->{sfx}($type->{ctype} a, $type->{ctype} b, $type->{ctype} *r, int a_is_const, int b_is_const)
+		#int overflow__add_$type->{sfx}_strategy_largetype_$largetype->{sfx}(const $type->{ctype} a, const $type->{ctype} b, $type->{ctype} *const restrict r, const int a_is_const, const int b_is_const)
 		#{
 		#	(void) b_is_const;
 		#	$type->{ctype} r1;
@@ -335,7 +335,7 @@ sub dump_custom_add {
 	if (!$type->{signed}) {
 		print_code($indent, qq @
 		#overflow__private overflow__nonnull_arg(3) overflow__must_check
-		#int overflow__add_$type->{sfx}_strategy_postcheck($type->{ctype} a, $type->{ctype} b, $type->{ctype} *r, int a_is_const, int b_is_const)
+		#int overflow__add_$type->{sfx}_strategy_postcheck(const $type->{ctype} a, const $type->{ctype} b, $type->{ctype} *const restrict r, const int a_is_const, const int b_is_const)
 		#{
 		#	(void) a_is_const;
 		#	(void) b_is_const;
@@ -350,7 +350,7 @@ sub dump_custom_add {
 
 		print_code($indent, qq @
 		#overflow__private overflow__nonnull_arg(3) overflow__must_check
-		#int overflow__add_$type->{sfx}_strategy_partial($type->{ctype} a, $type->{ctype} b, $type->{ctype} *r, int a_is_const, int b_is_const)
+		#int overflow__add_$type->{sfx}_strategy_partial(const $type->{ctype} a, const $type->{ctype} b, $type->{ctype} *const restrict r, const int a_is_const, const int b_is_const)
 		#{
 		#	(void) a_is_const;
 		#	(void) b_is_const;
@@ -397,7 +397,7 @@ sub dump_custom_sub {
 	my ($indent, $type) = @_;
 	print_code($indent, qq @
 	#overflow__private overflow__nonnull_arg(3) overflow__must_check
-	#int overflow__sub_$type->{sfx}_strategy_precheck($type->{ctype} a, $type->{ctype} b, $type->{ctype} *r, int a_is_const, int b_is_const)
+	#int overflow__sub_$type->{sfx}_strategy_precheck(const $type->{ctype} a, const $type->{ctype} b, $type->{ctype} *const restrict r, const int a_is_const, const int b_is_const)
 	#{
 	#	(void) b_is_const;
 	#	int flag = 0;
@@ -435,7 +435,7 @@ sub dump_custom_sub {
 	if (!$type->{signed}) {
 		print_code($indent, qq @
 		#overflow__private overflow__nonnull_arg(3) overflow__must_check
-		#int overflow__sub_$type->{sfx}_strategy_postcheck($type->{ctype} a, $type->{ctype} b, $type->{ctype} *r, int a_is_const, int b_is_const)
+		#int overflow__sub_$type->{sfx}_strategy_postcheck(const $type->{ctype} a, const $type->{ctype} b, $type->{ctype} *const restrict r, const int a_is_const, const int b_is_const)
 		#{
 		#	(void) a_is_const;
 		#	(void) b_is_const;
@@ -452,7 +452,7 @@ sub dump_custom_sub {
 		for my $largetype (get_larger_types($type)) {
 			print_code($indent, qq @
 			#overflow__private overflow__nonnull_arg(3) overflow__must_check
-			#int overflow__sub_$type->{sfx}_strategy_largetype_$largetype->{sfx}($type->{ctype} a, $type->{ctype} b, $type->{ctype} *r, int a_is_const, int b_is_const)
+			#int overflow__sub_$type->{sfx}_strategy_largetype_$largetype->{sfx}(const $type->{ctype} a, const $type->{ctype} b, $type->{ctype} *const restrict r, const int a_is_const, const int b_is_const)
 			#{
 			#	(void) a_is_const;
 			#	(void) b_is_const;
@@ -471,7 +471,7 @@ sub dump_custom_sub {
 	} else {
 		print_code($indent, qq @
 		#overflow__private overflow__nonnull_arg(3) overflow__must_check
-		#int overflow__sub_$type->{sfx}_strategy_largetype($type->{ctype} a, $type->{ctype} b, $type->{ctype} *r, int a_is_const, int b_is_const)
+		#int overflow__sub_$type->{sfx}_strategy_largetype(const $type->{ctype} a, const $type->{ctype} b, $type->{ctype} *const restrict r, const int a_is_const, const int b_is_const)
 		#{
 		#	return overflow__sub_$type->{sfx}_strategy_precheck(a, b, r, a_is_const, b_is_const);
 		#}
@@ -499,7 +499,7 @@ sub dump_custom_mul {
 	my ($indent, $type) = @_;
 	print_code($indent, qq @
 	#overflow__private overflow__nonnull_arg(3) overflow__must_check
-	#int overflow__mul_$type->{sfx}_strategy_precheck($type->{ctype} a, $type->{ctype} b, $type->{ctype} *r, int a_is_const, int b_is_const)
+	#int overflow__mul_$type->{sfx}_strategy_precheck(const $type->{ctype} a, const $type->{ctype} b, $type->{ctype} *const restrict r, const int a_is_const, const int b_is_const)
 	#{
 	#	(void) b_is_const;
 	#	int flag = 0;
@@ -555,7 +555,7 @@ sub dump_custom_mul {
 	for my $largetype (get_larger_types($type)) {
 		print_code($indent, qq @
 		#overflow__private overflow__nonnull_arg(3) overflow__must_check
-		#int overflow__mul_$type->{sfx}_strategy_largetype_$largetype->{sfx}($type->{ctype} a, $type->{ctype} b, $type->{ctype} *r, int a_is_const, int b_is_const)
+		#int overflow__mul_$type->{sfx}_strategy_largetype_$largetype->{sfx}(const $type->{ctype} a, const $type->{ctype} b, $type->{ctype} *const restrict r, const int a_is_const, const int b_is_const)
 		#{
 		#	(void) a_is_const;
 		#	(void) b_is_const;
@@ -584,7 +584,7 @@ sub dump_custom_mul {
 	if (!$type->{signed}) {
 		print_code($indent, qq @
 		#overflow__private overflow__nonnull_arg(3) overflow__must_check
-		#int overflow__mul_$type->{sfx}_strategy_partial($type->{ctype} a, $type->{ctype} b, $type->{ctype} *r, int a_is_const, int b_is_const)
+		#int overflow__mul_$type->{sfx}_strategy_partial(const $type->{ctype} a, const $type->{ctype} b, $type->{ctype} *const restrict r, const int a_is_const, const int b_is_const)
 		#{
 		#	(void) a_is_const;
 		#	(void) b_is_const;
@@ -621,7 +621,7 @@ sub dump_custom_mul {
 
 		print_code($indent, qq @
 		#overflow__private overflow__nonnull_arg(3) overflow__must_check
-		#int overflow__mul_$type->{sfx}_strategy_postcheck($type->{ctype} a, $type->{ctype} b, $type->{ctype} *r, int a_is_const, int b_is_const)
+		#int overflow__mul_$type->{sfx}_strategy_postcheck(const $type->{ctype} a, const $type->{ctype} b, $type->{ctype} *const restrict r, const int a_is_const, const int b_is_const)
 		#{
 		#	if ((a_is_const && !a) || (b_is_const && !b)) {
 		#		*r = 0;
@@ -809,7 +809,7 @@ sub generate_default_strategy {
 	if (!$GENERATE_DEFAULT) {
 		print_code($indent, qq @
 		#overflow__private overflow__nonnull_arg(3) overflow__must_check
-		#int overflow_$prefix->{name}_$op->{name}_$type->{sfx}_strategy_default($type->{ctype} a, $type->{ctype} b, $type->{ctype} *r, int a_is_const, int b_is_const)
+		#int overflow_$prefix->{name}_$op->{name}_$type->{sfx}_strategy_default(const $type->{ctype} a, const $type->{ctype} b, $type->{ctype} *const restrict r, const int a_is_const, const int b_is_const)
 		#{
 		#	return overflow__$op->{name}_$type->{sfx}_strategy_precheck(a, b, r, a_is_const, b_is_const);
 		#}
@@ -820,7 +820,7 @@ sub generate_default_strategy {
 	my $expect = $prefix->{name} ? "overflow_$prefix->{name}" : "";
 	print_code($indent, qq @
 	#overflow__private overflow__nonnull_arg(3) overflow__must_check
-	#int overflow_$prefix->{name}_$op->{name}_$type->{sfx}_strategy_default($type->{ctype} a, $type->{ctype} b, $type->{ctype} *r, int a_is_const, int b_is_const)
+	#int overflow_$prefix->{name}_$op->{name}_$type->{sfx}_strategy_default(const $type->{ctype} a, const $type->{ctype} b, $type->{ctype} *const restrict r, const int a_is_const, const int b_is_const)
 	#{
 	@);
 	for my $vc (@vc) {
@@ -850,7 +850,7 @@ sub generate_largetype {
 	my ($indent, $prefix, $type, $op) = @_;
 	print_code($indent, qq @
 	#overflow__private overflow__nonnull_arg(3) overflow__must_check
-	#int overflow_$prefix->{name}_$op->{name}_$type->{sfx}_strategy_largetype($type->{ctype} a, $type->{ctype} b, $type->{ctype} *r, int a_is_const, int b_is_const)
+	#int overflow_$prefix->{name}_$op->{name}_$type->{sfx}_strategy_largetype(const $type->{ctype} a, const $type->{ctype} b, $type->{ctype} *const restrict r, const int a_is_const, const int b_is_const)
 	#{
 	@);
 	if (!strategy_implemented($type, $op, (grep { $_->{name} eq "largetype" } @strategies)[0])) {
@@ -880,7 +880,7 @@ sub generate_internal {
 	my ($indent, $prefix, $type, $op) = @_;
 	print_code($indent, qq @
 	#overflow__private overflow__nonnull_arg(3) overflow__must_check
-	#int overflow_$prefix->{name}_$op->{name}_$type->{sfx}_internal($type->{ctype} a, $type->{ctype} b, $type->{ctype} *r, int a_is_const, int b_is_const)
+	#int overflow_$prefix->{name}_$op->{name}_$type->{sfx}_internal(const $type->{ctype} a, const $type->{ctype} b, $type->{ctype} *const restrict r, const int a_is_const, const int b_is_const)
 	#{
 	@);
 	print_pp($indent, qq @
