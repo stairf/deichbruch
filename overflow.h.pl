@@ -377,9 +377,9 @@ sub dump_custom_add {
 	}
 
 
+	my $op = (grep { $_->{name} eq "add" } @ops)[0];
+	generate_largetype($indent, $type, $op);
 	for my $prefix (@prefixes) {
-		my $op = (grep { $_->{name} eq "add" } @ops)[0];
-		generate_largetype($indent, $prefix, $type, $op);
 		generate_default_strategy($indent, $prefix, $type, $op);
 		generate_internal($indent, $prefix, $type, $op);
 	}
@@ -479,9 +479,9 @@ sub dump_custom_sub {
 		print "\n";
 	}
 
+	my $op = (grep { $_->{name} eq "sub" } @ops)[0];
+	generate_largetype($indent, $type, $op) if $type->{signed};
 	for my $prefix (@prefixes) {
-		my $op = (grep { $_->{name} eq "sub" } @ops)[0];
-		generate_largetype($indent, $prefix, $type, $op) if $type->{signed};
 		generate_default_strategy($indent, $prefix, $type, $op);
 		generate_internal($indent, $prefix, $type, $op);
 	}
@@ -642,9 +642,9 @@ sub dump_custom_mul {
 		print "\n";
 	}
 
+	my $op = (grep { $_->{name} eq "mul" } @ops)[0];
+	generate_largetype($indent, $type, $op);
 	for my $prefix (@prefixes) {
-		my $op = (grep { $_->{name} eq "mul" } @ops)[0];
-		generate_largetype($indent, $prefix, $type, $op);
 		generate_default_strategy($indent, $prefix, $type, $op);
 		generate_internal($indent, $prefix, $type, $op);
 	}
@@ -847,10 +847,10 @@ sub generate_default_strategy {
 }
 
 sub generate_largetype {
-	my ($indent, $prefix, $type, $op) = @_;
+	my ($indent, $type, $op) = @_;
 	print_code($indent, qq @
 	#overflow__private overflow__nonnull_arg(3) overflow__must_check
-	#int overflow_$prefix->{name}_$op->{name}_$type->{sfx}_strategy_largetype(const $type->{ctype} a, const $type->{ctype} b, $type->{ctype} *const restrict r, const int a_is_const, const int b_is_const)
+	#int overflow__$op->{name}_$type->{sfx}_strategy_largetype(const $type->{ctype} a, const $type->{ctype} b, $type->{ctype} *const restrict r, const int a_is_const, const int b_is_const)
 	#{
 	@);
 	if (!strategy_implemented($type, $op, (grep { $_->{name} eq "largetype" } @strategies)[0])) {
