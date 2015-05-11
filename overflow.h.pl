@@ -384,11 +384,11 @@ sub dump_custom_add {
 		generate_internal($indent, $prefix, $type, $op);
 	}
 
-	print_pp($indent, qq @
-	#define overflow_add_$type->{sfx}(a, b, r)          overflow__add_$type->{sfx}_internal((a), (b), (r), overflow__constant(a), overflow__constant(b))
-	#define overflow_likely_add_$type->{sfx}(a, b, r)   overflow__likely_add_$type->{sfx}_internal((a), (b), (r), overflow__constant(a), overflow__constant(b))
-	#define overflow_unlikely_add_$type->{sfx}(a, b, r) overflow__unlikely_add_$type->{sfx}_internal((a), (b), (r), overflow__constant(a), overflow__constant(b))
-	@);
+	for my $p (@prefixes) {
+		print_pp($indent, qq @
+		#define overflow$p->{name}_add_$type->{sfx}(a, b, r) overflow_$p->{name}_add_$type->{sfx}_internal((a), (b), (r), overflow__constant(a), overflow__constant(b))
+		@);
+	}
 
 	print "\n";
 }
@@ -487,11 +487,11 @@ sub dump_custom_sub {
 	}
 	print "\n";
 
-	print_pp($indent, qq @
-	#define overflow_sub_$type->{sfx}(a, b, r)          overflow__sub_$type->{sfx}_internal((a), (b), (r), overflow__constant(a), overflow__constant(b))
-	#define overflow_likely_sub_$type->{sfx}(a, b, r)   overflow__likely_sub_$type->{sfx}_internal((a), (b), (r), overflow__constant(a), overflow__constant(b))
-	#define overflow_unlikely_sub_$type->{sfx}(a, b, r) overflow__unlikely_sub_$type->{sfx}_internal((a), (b), (r), overflow__constant(a), overflow__constant(b))
-	@);
+	for my $p (@prefixes) {
+		print_pp($indent, qq @
+		#define overflow$p->{name}_sub_$type->{sfx}(a, b, r) overflow_$p->{name}_sub_$type->{sfx}_internal((a), (b), (r), overflow__constant(a), overflow__constant(b))
+		@);
+	}
 	print "\n";
 }
 
@@ -650,12 +650,22 @@ sub dump_custom_mul {
 	}
 	print "\n";
 
-	print_pp($indent, qq @
-	#define overflow_mul_$type->{sfx}(a, b, r)          overflow__mul_$type->{sfx}_internal((a), (b), (r), overflow__constant(a), overflow__constant(b))
-	#define overflow_likely_mul_$type->{sfx}(a, b, r)   overflow__likely_mul_$type->{sfx}_internal((a), (b), (r), overflow__constant(a), overflow__constant(b))
-	#define overflow_unlikely_mul_$type->{sfx}(a, b, r) overflow__unlikely_mul_$type->{sfx}_internal((a), (b), (r), overflow__constant(a), overflow__constant(b))
-	@);
+	for my $p (@prefixes) {
+		print_pp($indent, qq @
+		#define overflow$p->{name}_mul_$type->{sfx}(a, b, r) overflow_$p->{name}_mul_$type->{sfx}_internal((a), (b), (r), overflow__constant(a), overflow__constant(b))
+		@);
+	}
 	print "\n";
+}
+
+sub dump_prefixed_builtins {
+	my ($indent, $type, $op) = @_;
+	for my $p (grep { $_->{name} } @prefixes) {
+		print_pp($indent, qq @
+		#	define overflow$p->{name}_${op}_$type->{sfx}(a, b, r) overflow_$p->{name}(overflow_${op}_$type->{sfx}((a), (b), (r)))
+
+		@);
+	}
 }
 
 sub dump_add_for_type {
@@ -663,11 +673,12 @@ sub dump_add_for_type {
 	dump_try_builtin($indent, $type, "add");
 	print_pp($indent, qq @
 	#ifdef overflow_add_$type->{sfx}
-	#	define overflow_likely_add_$type->{sfx}(a, b, r)   overflow__expect(overflow_add_$type->{sfx}((a), (b), (r)), 1)
-	#	define overflow_unlikely_add_$type->{sfx}(a, b, r) overflow__expect(overflow_add_$type->{sfx}((a), (b), (r)), 0)
+	@);
+		dump_prefixed_builtins($indent, $type, "add");
+	print_pp($indent, qq @
 	#else
 	@);
-	dump_custom_add($indent . "\t", $type);
+		dump_custom_add($indent . "\t", $type);
 	print_pp($indent, qq @
 	#endif /* overflow_add_$type->{sfx} */
 	@);
@@ -679,11 +690,12 @@ sub dump_sub_for_type {
 	dump_try_builtin($indent, $type, "sub");
 	print_pp($indent, qq @
 	#ifdef overflow_sub_$type->{sfx}
-	#	define overflow_likely_sub_$type->{sfx}(a, b, r)   overflow__expect(overflow_sub_$type->{sfx}((a), (b), (r)), 1)
-	#	define overflow_unlikely_sub_$type->{sfx}(a, b, r) overflow__expect(overflow_sub_$type->{sfx}((a), (b), (r)), 0)
+	@);
+		dump_prefixed_builtins($indent, $type, "sub");
+	print_pp($indent, qq @
 	#else
 	@);
-	dump_custom_sub($indent . "\t", $type);
+		dump_custom_sub($indent . "\t", $type);
 	print_pp($indent, qq @
 	#endif /* overflow_sub_$type->{sfx} */
 	@);
@@ -695,11 +707,12 @@ sub dump_mul_for_type {
 	dump_try_builtin($indent, $type, "mul");
 	print_pp($indent, qq @
 	#ifdef overflow_mul_$type->{sfx}
-	#	define overflow_likely_mul_$type->{sfx}(a, b, r)   overflow__expect(overflow_mul_$type->{sfx}((a), (b), (r)), 1)
-	#	define overflow_unlikely_mul_$type->{sfx}(a, b, r) overflow__expect(overflow_mul_$type->{sfx}((a), (b), (r)), 0)
+	@);
+		dump_prefixed_builtins($indent, $type, "mul");
+	print_pp($indent, qq @
 	#else
 	@);
-	dump_custom_mul($indent . "\t", $type);
+		dump_custom_mul($indent . "\t", $type);
 	print_pp($indent, qq @
 	#endif /* overflow_mul_$type->{sfx} */
 	@);
