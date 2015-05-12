@@ -30,4 +30,8 @@ use warnings;
 use strict;
 
 $ENV{NO_DEFAULT_STRATEGY} = 1;
-do "overflow.h.pl";
+if (!defined do "overflow.h.pl") {
+	die "overflow.h.pl: $@\n" if $@;
+	die "overflow.h.pl: $!\n";
+}
+
