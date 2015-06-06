@@ -119,7 +119,7 @@ sub print_define {
 	$text =~ s/^[ \t\n]+//;
 	$text =~ s/[ \t\n]+$//;
 	print "#" . $indent . "define $name \\\n";
-	print $indent . $_ for map { s/^[ \t]*#?//r } map { s/[ \t]*$/ \\\n/r } split /\n/, $text;
+	print $indent . "\t" . $_ for map { s/^[ \t]*#?//r } map { s/[ \t]*$/ \\\n/r } split /\n/, $text;
 	print "\n\n";
 }
 
@@ -895,8 +895,8 @@ sub dump_generic {
 	for my $prefix (@prefixes) {
 		print_define($indent . "\t\t\t", "overflow$prefix->{name}_$op->{name}(a, b, r)",
 			(join "", map { qq @
-			#	__builtin_choose_expr(__builtin_types_compatible_p(__typeof__(*(r)), $_->{ctype}),
-			#		overflow$prefix->{name}_$op->{name}_$_->{sfx}((a), (b), ($_->{ctype} *)(r)),
+			#__builtin_choose_expr(__builtin_types_compatible_p(__typeof__(*(r)), $_->{ctype}),
+			#	overflow$prefix->{name}_$op->{name}_$_->{sfx}((a), (b), ($_->{ctype} *)(r)),
 			@ } @types)
 			. "#\t((void)0)\n"
 			. (")" x scalar @types)
