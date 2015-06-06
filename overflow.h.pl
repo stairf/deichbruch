@@ -125,20 +125,21 @@ sub print_define {
 
 sub dump_try_builtin {
 	my ($indent, $type, $opname) = @_;
-	return if $type->{category} ne "native";
+	if ($type->{category} ne "native") {
+		print_pp($indent, qq @
+		#if 1
+		#	// no compiler built-in available for overflow_${opname}_$type->{sfx}
+		@);
+		return;
+	}
 	my $asm = ($type->{signed} ? "s" : "u") . $opname . ($type->{sfx} =~ s/[ui]$//r);
 	print_pp($indent, qq @
-	#ifndef overflow__no_builtins
-	#	if defined __clang__
-	#		if __has_builtin(__builtin_${asm}_overflow)
-	#			define overflow_${opname}_$type->{sfx}(a, b, r) __builtin_${asm}_overflow((a), (b), (r))
-	#		endif
-	#	elif defined __GNUC__
-	#		if __GNUC__ >= 5
-	#			define overflow_${opname}_$type->{sfx}(a, b, r) __builtin_${asm}_overflow((a), (b), (r))
-	#		endif
-	#	endif
-	#endif /* overflow__no_builtins */
+	#if !defined overflow__no_builtins && defined overflow__have_builtin_${asm}_overflow
+	#	define overflow_${opname}_$type->{sfx}(a, b, r) __builtin_${asm}_overflow((a), (b), (r))
+	@);
+	dump_prefixed_builtins($indent, $type, $opname);
+	print_pp($indent, qq @
+	#else
 	@);
 	print "\n";
 }
@@ -147,109 +148,275 @@ sub dump_common_macros {
 	my ($indent) = @_;
 	print_pp($indent, qq @
 	#if defined __clang__
-	#	if __has_attribute(__always_inline__) && __has_attribute(__unused__)
-	#		define overflow__private static inline __attribute__((__always_inline__,__unused__))
-	#	elif __has_attribute(__always_inline__)
-	#		define overflow__private static inline __attribute__((__always_inline__))
-	#	elif __has_attribute(__unused__)
-	#		define overflow__private static inline __attribute__((__unused__))
-	#	endif
-	#elif defined __GNUC__
-	#	if __GNUC__ >= 4 /* TODO */
-	#		define overflow__private static inline __attribute__((__always_inline__,__unused__,__artificial__))
-	#	elif __GNUC__ > 3 || (__GNUC__ == 3 && __GNUC_MINOR__ >= 1)
-	#		define overflow__private static inline __attribute__((__always_inline__,__unused__))
-	#	elif __GNUC__ > 2 || (__GNUC__ == 2 && __GNUC_MINOR__ >= 7)
-	#		define overflow__private static inline __attribute__((__unused__))
-	#	endif
-	#endif
-
-	#ifndef overflow__private
-	#	define overflow__private static inline
-	#endif
-
-	#ifdef __OPTIMIZE__
-	#	if defined __clang__
+	#	if __clang_major__ < 3 || __clang_major__ == 3 && __clang_minor__ < 3
+	#
+	#	// Old clang versions have a bug where __has_feature and similar CPP
+	#	// functions cause syntax errors. In consequence, using these macros
+	#	// makes no sense, because feature detection must not lead to
+	#	// compilation errors.
+	#	//
+	#	// The most reliable solution is to manually disable all compiler features
+	#	// to ensure the code compiles. In consequence, the code will probably be
+	#	// a lot slower. If this matters to you, simply upgrade to clang version
+	#	// 3.3 or newer.
+	#	//
+	#	// According to the clang documentation, the version number should not be
+	#	// used for feature checking. However, this appears to be the most
+	#	// reliable way.
+	#	//
+	#	// This problem appears to be fixed in the commit
+	#	// 3f03b586351779be6947466f530f22c491b1b70f
+	#	//
+	#	// At that commit, docs/ReleaseNotes.html contains version number 3.2.
+	#	// Therefore, version 3.3 should be safe.
+	#
+	#	else
+	#
+	#		define overflow__have_typeof 1
+	#
 	#		if __has_builtin(__builtin_unreachable)
-	#			define overflow__assume(x) do { if (!(x)) __builtin_unreachable(); } while (0)
+	#			define overflow__have_builtin_unreachable 1
 	#		endif
-	#	elif defined __GNUC__
-	#		if __GNUC__ > 4 || ( __GNUC__ == 4 && __GNUC_MINOR__ >= 5 )
-	#			define overflow__assume(x) do { if (!(x)) __builtin_unreachable(); } while (0)
+	#
+	#		if __has_builtin(__builtin_constant_p)
+	#			define overflow__have_builtin_constant_p 1
 	#		endif
+	#
+	#		if __has_builtin(__builtin_expect)
+	#			define overflow__have_builtin_expect 1
+	#		endif
+	#
+	#		if __has_builtin(__builtin_choose_expr)
+	#			define overflow__have_builtin_choose_expr 1
+	#		endif
+	#
+	#		if __has_builtin(__builtin_types_compatible_p)
+	#			define overflow__have_builtin_types_compatible_p 1
+	#		endif
+	#
+	#		if __has_builtin(__builtin_assume)
+	#			define overflow__have_builtin_assume 1
+	#		endif
+	#
+	#		if __has_attribute(__always_inline__) || __has_attribute(always_inline)
+	#			define overflow__have_attribute_always_inline 1
+	#		endif
+	#
+	#		if __has_attribute(__unused__) || __has_attribute(unused)
+	#			define overflow__have_attribute_unused 1
+	#		endif
+	#
+	#		if __has_attribute(__artificial__) || __has_attribute(artificial)
+	#			define overflow__have_attribute_artificial 1
+	#		endif
+	#
+	#		if __has_attribute(__nonnull__) || __has_attribute(nonnull)
+	#			define overflow__have_attribute_nonnull 1
+	#		endif
+	#
+	#		if __has_builtin(__builtin_add_overflow)
+	#			define overflow__have_builtin_add_overflow 1
+	#		endif
+	#
+	#		if __has_builtin(__builtin_sadd_overflow)
+	#			define overflow__have_builtin_sadd_overflow 1
+	#		endif
+	#
+	#		if __has_builtin(__builtin_saddl_overflow)
+	#			define overflow__have_builtin_saddl_overflow 1
+	#		endif
+	#
+	#		if __has_builtin(__builtin_saddll_overflow)
+	#			define overflow__have_builtin_saddll_overflow 1
+	#		endif
+	#
+	#		if __has_builtin(__builtin_uadd_overflow)
+	#			define overflow__have_builtin_uadd_overflow 1
+	#		endif
+	#
+	#		if __has_builtin(__builtin_uaddl_overflow)
+	#			define overflow__have_builtin_uaddl_overflow 1
+	#		endif
+	#
+	#		if __has_builtin(__builtin_uaddll_overflow)
+	#			define overflow__have_builtin_uaddll_overflow 1
+	#		endif
+	#
+	#		if __has_builtin(__builtin_sub_overflow)
+	#			define overflow__have_builtin_sub_overflow 1
+	#		endif
+	#
+	#		if __has_builtin(__builtin_ssub_overflow)
+	#			define overflow__have_builtin_ssub_overflow 1
+	#		endif
+	#
+	#		if __has_builtin(__builtin_ssubl_overflow)
+	#			define overflow__have_builtin_ssubl_overflow 1
+	#		endif
+	#
+	#		if __has_builtin(__builtin_ssubll_overflow)
+	#			define overflow__have_builtin_ssubll_overflow 1
+	#		endif
+	#
+	#		if __has_builtin(__builtin_usub_overflow)
+	#			define overflow__have_builtin_usub_overflow 1
+	#		endif
+	#
+	#		if __has_builtin(__builtin_usubl_overflow)
+	#			define overflow__have_builtin_usubl_overflow 1
+	#		endif
+	#
+	#		if __has_builtin(__builtin_usubll_overflow)
+	#			define overflow__have_builtin_usubll_overflow 1
+	#		endif
+	#
+	#		if __has_builtin(__builtin_mul_overflow)
+	#			define overflow__have_builtin_mul_overflow 1
+	#		endif
+	#
+	#		if __has_builtin(__builtin_smul_overflow)
+	#			define overflow__have_builtin_smul_overflow 1
+	#		endif
+	#
+	#		if __has_builtin(__builtin_smull_overflow)
+	#			define overflow__have_builtin_smull_overflow 1
+	#		endif
+	#
+	#		if __has_builtin(__builtin_smulll_overflow)
+	#			define overflow__have_builtin_smulll_overflow 1
+	#		endif
+	#
+	#		if __has_builtin(__builtin_umul_overflow)
+	#			define overflow__have_builtin_umul_overflow 1
+	#		endif
+	#
+	#		if __has_builtin(__builtin_umull_overflow)
+	#			define overflow__have_builtin_umull_overflow 1
+	#		endif
+	#
+	#		if __has_builtin(__builtin_umulll_overflow)
+	#			define overflow__have_builtin_umulll_overflow 1
+	#		endif
+	#
 	#	endif
+	#
+	#elif defined __GNUC__
+	#
+	#	define overflow__have_typeof 1
+	#
+	#	if __GNUC__ > 5 || (__GNUC__ == 5 && __GNUC_MINOR__ >= 1)
+	#		define overflow__have_builtin_add_overflow 1
+	#		define overflow__have_builtin_sadd_overflow 1
+	#		define overflow__have_builtin_saddl_overflow 1
+	#		define overflow__have_builtin_saddll_overflow 1
+	#		define overflow__have_builtin_uadd_overflow 1
+	#		define overflow__have_builtin_uaddl_overflow 1
+	#		define overflow__have_builtin_uaddll_overflow 1
+	#		define overflow__have_builtin_sub_overflow 1
+	#		define overflow__have_builtin_ssub_overflow 1
+	#		define overflow__have_builtin_ssubl_overflow 1
+	#		define overflow__have_builtin_ssubll_overflow 1
+	#		define overflow__have_builtin_usub_overflow 1
+	#		define overflow__have_builtin_usubl_overflow 1
+	#		define overflow__have_builtin_usubll_overflow 1
+	#		define overflow__have_builtin_mul_overflow 1
+	#		define overflow__have_builtin_smul_overflow 1
+	#		define overflow__have_builtin_smull_overflow 1
+	#		define overflow__have_builtin_smulll_overflow 1
+	#		define overflow__have_builtin_umul_overflow 1
+	#		define overflow__have_builtin_umull_overflow 1
+	#		define overflow__have_builtin_umulll_overflow 1
+	#	endif
+	#
+	#	if __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 5)
+	#		define overflow__have_builtin_unreachable 1
+	#	endif
+	#
+	#	if __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 3)
+	#		define overflow__have_builtin_expect 1
+	#		define overflow__have_attribute_artificial 1
+	#	endif
+	#
+	#	if __GNUC__ > 3 || (__GNUC__ == 3 && __GNUC_MINOR >= 3)
+	#		define overflow__have_attribute_nonnull 1
+	#		define overflow__have_attribute_warn_unused_result 1
+	#	endif
+	#
+	#	if __GNUC__ > 3 || (__GNUC__ == 3 && __GNUC_MINOR >= 1)
+	#		define overflow__have_builtin_types_compatible_p 1
+	#		define overflow__have_builtin_choose_expr 1
+	#		//
+	#		// see also: https://gcc.gnu.org/onlinedocs/gcc/Other-Builtins.html
+	#		// this function is completely safe since version 3.0.1
+	#		//
+	#		define overflow__have_builtin_constant_p 1
+	#	endif
+	#
+	#	if __GNUC__ > 2 || (__GNUC__ == 2 && __GNUC_MINOR >= 7)
+	#		define overflow__have_attribute_unused 1
+	#	endif
+	#
 	#endif
 
-	#ifndef overflow__assume
+	#ifdef overflow__have_attribute_always_inline
+	#	define overflow__attribute_always_inline __attribute__((__always_inline__))
+	#else
+	#	define overflow__attribute_always_inline /* empty */
+	#endif
+
+	#ifdef overflow__have_attribute_unused
+	#	define overflow__attribute_unused __attribute__((__unused__))
+	#else
+	#	define overflow__attribute_unused /* empty */
+	#endif
+
+	#ifdef overflow__have_attribute_artificial
+	#	define overflow__attribute_artificial __attribute__((__artificial__))
+	#else
+	#	define overflow__attribute_artificial /* empty */
+	#endif
+
+	#define overflow__private static inline overflow__attribute_always_inline overflow__attribute_unused overflow__attribute_artificial
+
+	#if defined overflow__have_builtin_assume
+	#	define overflow__assume(x) __builtin_assume(x)
+	#elif defined overflow__have_builtin_unreachable && defined __OPTIMIZE__
+	#	define overflow__assume(x) do { if (!(x)) __builtin_unreachable(); } while (0)
+	#else
 	#	define overflow__assume(x) ((void)0) /* ignore */
 	#endif
 
-	#if defined __clang__
-	#	if __has_builtin(__builtin_constant_p)
-	#		define overflow__constant(x) __builtin_constant_p(x)
-	#	endif
-	#elif defined __GNUC__
-	#	//
-	#	// see also: https://gcc.gnu.org/onlinedocs/gcc/Other-Builtins.html
-	#	// this function is completely safe since version 3.0.1
-	#	//
-	#	if __GNUC__ > 3 || (__GNUC__ == 3 && __GNUC_MINOR__ >= 1)
-	#		define overflow__constant(x) __builtin_constant_p(x)
-	#	endif
+	#ifdef overflow__have_builtin_constant_p
+	#	define overflow__constant(x) __builtin_constant_p(x)
+	#else
+	#	// fall-back: nothing can be proven to be constant
+	#	define overflow__constant(x) 0
 	#endif
 
-	#ifndef overflow__constant
-	#	define overflow__constant(x) 0 /* fall-back: this disables some optimizations */
-	#endif
-
-	#if defined __clang__
-	#	if __has_attribute(__nonnull__)
-	#		define overflow__nonnull_arg(idx) __attribute__((__nonnull__(idx)))
-	#	endif
-	#elif defined __GNUC__
-	#	if __GNUC__ > 3 || (__GNUC__ == 3 && __GNUC_MINOR__ >= 3)
-	#		define overflow__nonnull_arg(idx) __attribute__((__nonnull__(idx)))
-	#	endif
-	#endif
-
-	#ifndef overflow__nonnull_arg
+	#ifdef overflow__have_attribute_nonnull
+	#	define overflow__nonnull_arg(idx) __attribute__((__nonnull__(idx)))
+	#else
 	#	define overflow__nonnull_arg(idx) /* ignore */
 	#endif
 
-	#if defined __clang__
-	#	if __has_attribute(__warn_unused_result__)
-	#		define overflow__must_check __attribute__((__warn_unused_result__))
-	#	endif
-	#elif defined __GNUC__
-	#	if __GNUC__ > 3 || (__GNUC__ == 3 && __GNUC_MINOR__ >= 3)
-	#		define overflow__must_check __attribute__((__warn_unused_result__))
-	#	endif
-	#endif
-
-	#ifndef overflow__must_check
+	#ifdef overflow__have_attribute_warn_unused_result
+	#	define overflow__must_check __attribute__((__warn_unused_result__))
+	#else
 	#	define overflow__must_check /* ignore */
 	#endif
 
-	#define overflow__is_pow2(x) (!((x) & ((x)-1)))
-
-	#define overflow__is_fast_type(type) (sizeof(type) >= sizeof(int))
-
-	#if defined __clang__
-	#	if __has_builtin(__builtin_expect)
-	#		define overflow__expect(val, exp) __builtin_expect((val), (exp))
-	#	endif
-	#elif defined __GNUC__
-	#	if __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 3)
-	#		define overflow__expect(val, exp) __builtin_expect((val), (exp))
-	#	endif
-	#endif
-
-	#ifndef overflow__expect
+	#ifdef overflow__have_builtin_expect
+	#	define overflow__expect(val, exp) __builtin_expect((val), (exp))
+	#else
 	#	define overflow__expect(val, exp) (val)
 	#endif
 
 	#define overflow__likely(x)   overflow__expect((x), 1)
 	#define overflow__unlikely(x) overflow__expect((x), 0)
+
+	#define overflow__is_pow2(x) (!((x) & ((x)-1)))
+
+	#define overflow__is_fast_type(type) (sizeof(type) >= sizeof(int))
 
 	#define overflow__add_suitable_largetype(lmax, max, lmin, min) (lmax-max >= max && lmin-min <= min)
 	#define overflow__sub_suitable_largetype(lmax, max, lmin, min) (lmax+min >= max && lmin+max <= min)
@@ -671,14 +838,7 @@ sub dump_prefixed_builtins {
 sub dump_add_for_type {
 	my ($indent, $type) = @_;
 	dump_try_builtin($indent, $type, "add");
-	print_pp($indent, qq @
-	#ifdef overflow_add_$type->{sfx}
-	@);
-		dump_prefixed_builtins($indent, $type, "add");
-	print_pp($indent, qq @
-	#else
-	@);
-		dump_custom_add($indent . "\t", $type);
+	dump_custom_add($indent . "\t", $type);
 	print_pp($indent, qq @
 	#endif /* overflow_add_$type->{sfx} */
 	@);
@@ -688,14 +848,7 @@ sub dump_add_for_type {
 sub dump_sub_for_type {
 	my ($indent, $type) = @_;
 	dump_try_builtin($indent, $type, "sub");
-	print_pp($indent, qq @
-	#ifdef overflow_sub_$type->{sfx}
-	@);
-		dump_prefixed_builtins($indent, $type, "sub");
-	print_pp($indent, qq @
-	#else
-	@);
-		dump_custom_sub($indent . "\t", $type);
+	dump_custom_sub($indent . "\t", $type);
 	print_pp($indent, qq @
 	#endif /* overflow_sub_$type->{sfx} */
 	@);
@@ -705,14 +858,7 @@ sub dump_sub_for_type {
 sub dump_mul_for_type {
 	my ($indent, $type) = @_;
 	dump_try_builtin($indent, $type, "mul");
-	print_pp($indent, qq @
-	#ifdef overflow_mul_$type->{sfx}
-	@);
-		dump_prefixed_builtins($indent, $type, "mul");
-	print_pp($indent, qq @
-	#else
-	@);
-		dump_custom_mul($indent . "\t", $type);
+	dump_custom_mul($indent . "\t", $type);
 	print_pp($indent, qq @
 	#endif /* overflow_mul_$type->{sfx} */
 	@);
@@ -737,33 +883,14 @@ sub dump_mul {
 sub dump_generic {
 	my ($indent, $op) = @_;
 	print_pp($indent, qq @
-	#ifndef overflow_$op->{name}
-	#	if defined __clang__
-	#		if !defined overflow__no_builtins && __has_builtin(__builtin_$op->{name}_overflow)
-	#			define overflow_$op->{name}(a, b, r)          __builtin_$op->{name}_overflow((a), (b), (r))
-	#			define overflow_likely_$op->{name}(a, b, r)   overflow__expect(__builtin_$op->{name}_overflow((a), (b), (r)), 1)
-	#			define overflow_unlikely_$op->{name}(a, b, r) overflow__expect(__builtin_$op->{name}_overflow((a), (b), (r)), 0)
-	#		elif __has_builtin(__builtin_choose_expr) && __has_builtin(__builtin_types_compatible_p)
+	#if !defined overflow__no_builtins && defined overflow__have_builtin_$op->{name}_overflow
 	@);
 	for my $prefix (@prefixes) {
-		print_define($indent . "\t\t\t", "overflow$prefix->{name}_$op->{name}(a, b, r)",
-			(join "", map { qq @
-			#	__builtin_choose_expr(__builtin_types_compatible_p(__typeof__(*(r)), $_->{ctype}),
-			#		overflow$prefix->{name}_$op->{name}_$_->{sfx}((a), (b), ($_->{ctype} *)(r)),
-			@ } @types)
-			. "#\t((void)0)\n"
-			. (")" x scalar @types)
-		);
+		my $expect = $prefix->{name} ? "overflow_$prefix->{name}" : "";
+		print_define($indent . "\t", "overflow$prefix->{name}_$op->{name}(a, b, r)", "$expect(__builtin_$op->{name}_overflow(a, b, r))");
 	}
-
 	print_pp($indent, qq @
-	#		endif
-	#	elif defined __GNUC__
-	#		if !defined overflow__no_builtins && __GNUC__ >= 5
-	#			define overflow_$op->{name}(a, b, r)          __builtin_$op->{name}_overflow((a), (b), (r))
-	#			define overflow_likely_$op->{name}(a, b, r)   overflow__expect(__builtin_$op->{name}_overflow((a), (b), (r)), 1)
-	#			define overflow_unlikely_$op->{name}(a, b, r) overflow__expect(__builtin_$op->{name}_overflow((a), (b), (r)), 0)
-	#		elif __GNUC__ >= 4 /* TODO  */
+	#elif defined overflow__have_builtin_choose_expr && defined overflow__have_builtin_types_compatible_p && defined overflow__have_typeof
 	@);
 	for my $prefix (@prefixes) {
 		print_define($indent . "\t\t\t", "overflow$prefix->{name}_$op->{name}(a, b, r)",
@@ -776,8 +903,6 @@ sub dump_generic {
 		);
 	}
 	print_pp($indent, qq @
-	#		endif
-	#	endif
 	#endif
 	@);
 	print "\n";
