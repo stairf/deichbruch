@@ -73,7 +73,7 @@ PERL     = perl
 SH      ?= sh
 RM       = rm -rf
 MKDIR    = mkdir -p
-DEPGEN   = -MM -MF $@ -MT "$(@:%.d=%.o) $@" -MP -MG $<
+DEPGEN   = -MM >$@ -MT "$(@:%.d=%.o) $@" -MP -MG $<
 LATEX    = pdflatex </dev/null -interaction=nonstopmode
 
 CFLAGS  += $(OPTIMIZE) $(WARN)
