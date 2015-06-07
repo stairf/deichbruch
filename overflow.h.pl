@@ -111,7 +111,7 @@ sub print_pp {
 	my ($indent, $text) = @_;
 	$text =~ s/^[ \t\n]+//;
 	$text =~ s/[ \t\n]+$//;
-	print $_? "#$indent$_\n" : "\n" for map { s/^[ \t]*#?//r} map { s/[ \t]*$//r } split /\n/, $text;
+	print "$_\n" for map { $_ =~ m,^\s*//, ? "$indent$_" : $_ ? "#$indent$_" : "" } map { s/^[ \t]*#?//r} map { s/[ \t]*$//r } split /\n/, $text;
 }
 
 sub print_define {
