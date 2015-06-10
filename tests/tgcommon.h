@@ -41,7 +41,7 @@
 #define fail_mul(a,b) fail_mul_at(a,b,__FILE__,__LINE__,__func__)
 
 
-overflow__private void check_add_at(TYPE a, TYPE b, AT)
+overflow__function void check_add_at(TYPE a, TYPE b, AT)
 {
 	TYPE r;
 	if (overflow_add(a, b, &r)) {
@@ -51,7 +51,7 @@ overflow__private void check_add_at(TYPE a, TYPE b, AT)
 		termAt(FMT " + " FMT " = " FMT ", should be " FMT, a, b, r, a+b);
 }
 
-overflow__private void check_sub_at(TYPE a, TYPE b, AT)
+overflow__function void check_sub_at(TYPE a, TYPE b, AT)
 {
 	TYPE r;
 	if (overflow_sub(a, b, &r)) {
@@ -61,7 +61,7 @@ overflow__private void check_sub_at(TYPE a, TYPE b, AT)
 		termAt(FMT " - " FMT " = " FMT ", should be " FMT, a, b, r, a-b);
 }
 
-overflow__private void check_mul_at(TYPE a, TYPE b, AT)
+overflow__function void check_mul_at(TYPE a, TYPE b, AT)
 {
 	TYPE r;
 	if (overflow_mul(a, b, &r)) {
@@ -71,7 +71,7 @@ overflow__private void check_mul_at(TYPE a, TYPE b, AT)
 		termAt(FMT " * " FMT " = " FMT ", should be " FMT, a, b, r, a*b);
 }
 
-overflow__private void fail_add_at(TYPE a, TYPE b, AT)
+overflow__function void fail_add_at(TYPE a, TYPE b, AT)
 {
 	TYPE r;
 	if (overflow_add(a, b, &r))
@@ -79,7 +79,7 @@ overflow__private void fail_add_at(TYPE a, TYPE b, AT)
 	termAt(FMT " + " FMT " = " FMT ", should overflow", a, b, r);
 }
 
-overflow__private void fail_sub_at(TYPE a, TYPE b, AT)
+overflow__function void fail_sub_at(TYPE a, TYPE b, AT)
 {
 	TYPE r;
 	if (overflow_sub(a, b, &r))
@@ -87,7 +87,7 @@ overflow__private void fail_sub_at(TYPE a, TYPE b, AT)
 	termAt(FMT " - " FMT " = " FMT ", should overflow", a, b, r);
 }
 
-overflow__private void fail_mul_at(TYPE a, TYPE b, AT)
+overflow__function void fail_mul_at(TYPE a, TYPE b, AT)
 {
 	TYPE r;
 	if (overflow_mul(a, b, &r))

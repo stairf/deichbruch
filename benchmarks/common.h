@@ -63,9 +63,9 @@
 #define termAt(...) termX(_file, _line, _func, __VA_ARGS__)
 
 /*
- * HACK: we can use overflow__private here although it should be private
+ * HACK: we can use overflow__function here although it should be private
  */
-overflow__private uint64_t now()
+overflow__function uint64_t now()
 {
 	uint32_t low;
 	uint32_t high;
