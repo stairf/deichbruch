@@ -44,7 +44,7 @@ static void step(void)
 	o ^= o_mul(P0(9), P1(MAX/8), &r5);
 #ifdef SIGNED
 	o ^= o_mul(P0(MIN), P1(2), &r6);
-	o ^= o_mul(P0(MIN-1), P1(3), &r7);
+	o ^= o_mul(P0(MIN+1), P1(3), &r7);
 	o ^= o_mul(P0(MIN/2), P1(4), &r8);
 	o ^= o_mul(P0(MIN/3), P1(5), &r9);
 #else
