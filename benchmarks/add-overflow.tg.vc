@@ -36,22 +36,22 @@ static void step(void)
 	int o = 0;
 
 	start();
-	o ^= overflow_add(P0(MAX-1), P1(2), &r0);
-	o ^= overflow_add(P0(MAX-2), P1(3), &r1);
-	o ^= overflow_add(P0(MAX-5), P1(MAX), &r2);
-	o ^= overflow_add(P0(MAX), P1(MAX-7), &r3);
-	o ^= overflow_add(P0(MAX/2), P1(MAX/2+3), &r4);
-	o ^= overflow_add(P0(MAX/2+5), P1(MAX/2-1), &r5);
+	o ^= o_add(P0(MAX-1), P1(2), &r0);
+	o ^= o_add(P0(MAX-2), P1(3), &r1);
+	o ^= o_add(P0(MAX-5), P1(MAX), &r2);
+	o ^= o_add(P0(MAX), P1(MAX-7), &r3);
+	o ^= o_add(P0(MAX/2), P1(MAX/2+3), &r4);
+	o ^= o_add(P0(MAX/2+5), P1(MAX/2-1), &r5);
 #ifdef SIGNED
-	o ^= overflow_add(P0(MIN), P1(-1), &r6);
-	o ^= overflow_add(P0(MIN+1), P1(-2), &r7);
-	o ^= overflow_add(P0(MIN), P1(MIN), &r8);
-	o ^= overflow_add(P0(MIN/2), P1(MIN), &r9);
+	o ^= o_add(P0(MIN), P1(-1), &r6);
+	o ^= o_add(P0(MIN+1), P1(-2), &r7);
+	o ^= o_add(P0(MIN), P1(MIN), &r8);
+	o ^= o_add(P0(MIN/2), P1(MIN), &r9);
 #else
-	o ^= overflow_add(P0(MAX), P1(MAX), &r6);
-	o ^= overflow_add(P0(MAX), P1(1), &r7);
-	o ^= overflow_add(P0(MAX/2), P1(MAX), &r8);
-	o ^= overflow_add(P0(MAX/3), P1(MAX), &r9);
+	o ^= o_add(P0(MAX), P1(MAX), &r6);
+	o ^= o_add(P0(MAX), P1(1), &r7);
+	o ^= o_add(P0(MAX/2), P1(MAX), &r8);
+	o ^= o_add(P0(MAX/3), P1(MAX), &r9);
 #endif
 	end();
 

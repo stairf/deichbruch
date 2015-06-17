@@ -37,23 +37,23 @@ static void step(void)
 	TYPE t = 0;
 
 	start();
-	o0 = overflow_mul(P0(1), P1(2), &r0);
-	o1 = overflow_mul(P0(MAX), P1(1), &r1);
-	o2 = overflow_mul(P0(MAX/2), P1(2), &r2);
-	o3 = overflow_mul(P0(MAX/7), P1(6), &r3);
-	o4 = overflow_mul(P0(4), P1(MAX/8+1), &r4);
+	o0 = o_mul(P0(1), P1(2), &r0);
+	o1 = o_mul(P0(MAX), P1(1), &r1);
+	o2 = o_mul(P0(MAX/2), P1(2), &r2);
+	o3 = o_mul(P0(MAX/7), P1(6), &r3);
+	o4 = o_mul(P0(4), P1(MAX/8+1), &r4);
 #ifdef SIGNED
-	o5 = overflow_mul(P0(MAX), P1(-1), &r5);
-	o6 = overflow_mul(P0(MIN), P1(1), &r6);
-	o7 = overflow_mul(P0(MIN/2+1), P1(2), &r7);
-	o8 = overflow_mul(P0(MIN/4), P1(-1), &r8);
-	o9 = overflow_mul(P0(-2), P1(MIN/8+1), &r9);
+	o5 = o_mul(P0(MAX), P1(-1), &r5);
+	o6 = o_mul(P0(MIN), P1(1), &r6);
+	o7 = o_mul(P0(MIN/2+1), P1(2), &r7);
+	o8 = o_mul(P0(MIN/4), P1(-1), &r8);
+	o9 = o_mul(P0(-2), P1(MIN/8+1), &r9);
 #else
-	o5 = overflow_mul(P0(3), P1(11), &r5);
-	o6 = overflow_mul(P0(4), P1(13), &r6);
-	o7 = overflow_mul(P0(5), P1(17), &r7);
-	o8 = overflow_mul(P0(6), P1(MAX/8+1), &r8);
-	o9 = overflow_mul(P0(7), P1(MAX/9+1), &r9);
+	o5 = o_mul(P0(3), P1(11), &r5);
+	o6 = o_mul(P0(4), P1(13), &r6);
+	o7 = o_mul(P0(5), P1(17), &r7);
+	o8 = o_mul(P0(6), P1(MAX/8+1), &r8);
+	o9 = o_mul(P0(7), P1(MAX/9+1), &r9);
 #endif
 
 	end();

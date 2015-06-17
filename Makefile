@@ -62,7 +62,7 @@ PDIR = ./plots
 
 CC       = gcc
 LD       = gcc
-CFLAGS   = -std=c99 -I. -Doverflow__no_builtins
+CFLAGS   = -std=c99 -I. -Doverflow__no_builtins -DOVERFLOW_LAZY_GENERIC
 CFLAGS_B = -D_GNU_SOURCE
 CFLAGS_T = -ftrapv
 OPTIMIZE = -O3 -mtune=native -march=native

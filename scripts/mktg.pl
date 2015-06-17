@@ -74,6 +74,9 @@ for my $t (@types) {
 	print $out "#define MAX $t->{max}\n";
 	print $out "#define MIN $t->{min}\n";
 	print $out "#define FMT \"%\" $t->{fmt}\n";
+	for my $op (@ops) {
+		print $out "#define o_$op->{name}(a, b, r) overflow_$op->{name}_$t->{sfx}(a, b, r)\n";
+	}
 	if ($t->{signed}) {
 		print $out "#define SIGNED 1\n";
 		print $out "#define IS_2_COMPLEMENT (-MAX == MIN + 1)\n"

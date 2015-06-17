@@ -37,23 +37,23 @@ static void step(void)
 	TYPE t = 0;
 
 	start();
-	o0 = overflow_sub(P0(3), P1(0), &r0);
-	o1 = overflow_sub(P0(MAX), P1(1), &r1);
-	o2 = overflow_sub(P0(MAX/2), P1(MAX/2), &r2);
-	o3 = overflow_sub(P0(MAX/7), P1(MAX/9), &r3);
-	o4 = overflow_sub(P0(MAX), P1(MAX-1), &r4);
+	o0 = o_sub(P0(3), P1(0), &r0);
+	o1 = o_sub(P0(MAX), P1(1), &r1);
+	o2 = o_sub(P0(MAX/2), P1(MAX/2), &r2);
+	o3 = o_sub(P0(MAX/7), P1(MAX/9), &r3);
+	o4 = o_sub(P0(MAX), P1(MAX-1), &r4);
 #ifdef SIGNED
-	o5 = overflow_sub(P0(MIN), P1(-1), &r5);
-	o6 = overflow_sub(P0(0), P1(MAX), &r6);
-	o7 = overflow_sub(P0(1), P1(MAX-1), &r7);
-	o8 = overflow_sub(P0(-2), P1(-3), &r8);
-	o9 = overflow_sub(P0(-2), P1(MIN/2+1), &r9);
+	o5 = o_sub(P0(MIN), P1(-1), &r5);
+	o6 = o_sub(P0(0), P1(MAX), &r6);
+	o7 = o_sub(P0(1), P1(MAX-1), &r7);
+	o8 = o_sub(P0(-2), P1(-3), &r8);
+	o9 = o_sub(P0(-2), P1(MIN/2+1), &r9);
 #else
-	o5 = overflow_sub(P0(MAX), P1(MAX), &r5);
-	o6 = overflow_sub(P0(0), P1(0), &r6);
-	o7 = overflow_sub(P0(MAX/3), P1(MAX/3-1), &r7);
-	o8 = overflow_sub(P0(MAX-1), P1(1), &r8);
-	o9 = overflow_sub(P0(MAX-1), P1(MAX-2), &r9);
+	o5 = o_sub(P0(MAX), P1(MAX), &r5);
+	o6 = o_sub(P0(0), P1(0), &r6);
+	o7 = o_sub(P0(MAX/3), P1(MAX/3-1), &r7);
+	o8 = o_sub(P0(MAX-1), P1(1), &r8);
+	o9 = o_sub(P0(MAX-1), P1(MAX-2), &r9);
 #endif
 
 	end();

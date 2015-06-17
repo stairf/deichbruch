@@ -37,21 +37,21 @@ static void step(void)
 	TYPE t = 0;
 
 	start();
-	o0 = overflow_add(P0(1), P1(2), &r0);
-	o1 = overflow_add(P0(3), P1(2), &r1);
-	o2 = overflow_add(P0(MAX-1), P1(1), &r2);
-	o3 = overflow_add(P0(MAX-5), P1(3), &r3);
-	o4 = overflow_add(P0(MIN), P1(MAX), &r4);
-	o5 = overflow_add(P0(11), P1(MIN), &r5);
-	o6 = overflow_add(P0(13), P1(MAX-17), &r6);
+	o0 = o_add(P0(1), P1(2), &r0);
+	o1 = o_add(P0(3), P1(2), &r1);
+	o2 = o_add(P0(MAX-1), P1(1), &r2);
+	o3 = o_add(P0(MAX-5), P1(3), &r3);
+	o4 = o_add(P0(MIN), P1(MAX), &r4);
+	o5 = o_add(P0(11), P1(MIN), &r5);
+	o6 = o_add(P0(13), P1(MAX-17), &r6);
 #ifdef SIGNED
-	o7 = overflow_add(P0(-1), P1(MAX), &r7);
-	o8 = overflow_add(P0(MAX), P1(-11), &r8);
-	o9 = overflow_add(P0(-12), P1(-13), &r9);
+	o7 = o_add(P0(-1), P1(MAX), &r7);
+	o8 = o_add(P0(MAX), P1(-11), &r8);
+	o9 = o_add(P0(-12), P1(-13), &r9);
 #else
-	o7 = overflow_add(P0(MAX/2), P1(MAX/3), &r7);
-	o8 = overflow_add(P0(MAX/2), P1(3), &r8);
-	o9 = overflow_add(P0(5), P1(MAX/2), &r9);
+	o7 = o_add(P0(MAX/2), P1(MAX/3), &r7);
+	o8 = o_add(P0(MAX/2), P1(3), &r8);
+	o9 = o_add(P0(5), P1(MAX/2), &r9);
 #endif
 	end();
 

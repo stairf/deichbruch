@@ -44,7 +44,7 @@
 overflow__function void check_add_at(TYPE a, TYPE b, AT)
 {
 	TYPE r;
-	if (overflow_add(a, b, &r)) {
+	if (o_add(a, b, &r)) {
 		termAt(FMT " + " FMT " should not overflow", a, b);
 	}
 	if (r != a + b)
@@ -54,7 +54,7 @@ overflow__function void check_add_at(TYPE a, TYPE b, AT)
 overflow__function void check_sub_at(TYPE a, TYPE b, AT)
 {
 	TYPE r;
-	if (overflow_sub(a, b, &r)) {
+	if (o_sub(a, b, &r)) {
 		termAt(FMT " - " FMT " should not overflow", a, b);
 	}
 	if (r != a - b)
@@ -64,7 +64,7 @@ overflow__function void check_sub_at(TYPE a, TYPE b, AT)
 overflow__function void check_mul_at(TYPE a, TYPE b, AT)
 {
 	TYPE r;
-	if (overflow_mul(a, b, &r)) {
+	if (o_mul(a, b, &r)) {
 		termAt(FMT " * " FMT " should not overflow", a, b);
 	}
 	if (r != a * b)
@@ -74,7 +74,7 @@ overflow__function void check_mul_at(TYPE a, TYPE b, AT)
 overflow__function void fail_add_at(TYPE a, TYPE b, AT)
 {
 	TYPE r;
-	if (overflow_add(a, b, &r))
+	if (o_add(a, b, &r))
 		return;
 	termAt(FMT " + " FMT " = " FMT ", should overflow", a, b, r);
 }
@@ -82,7 +82,7 @@ overflow__function void fail_add_at(TYPE a, TYPE b, AT)
 overflow__function void fail_sub_at(TYPE a, TYPE b, AT)
 {
 	TYPE r;
-	if (overflow_sub(a, b, &r))
+	if (o_sub(a, b, &r))
 		return;
 	termAt(FMT " - " FMT " = " FMT ", should overflow", a, b, r);
 }
@@ -90,7 +90,7 @@ overflow__function void fail_sub_at(TYPE a, TYPE b, AT)
 overflow__function void fail_mul_at(TYPE a, TYPE b, AT)
 {
 	TYPE r;
-	if (overflow_mul(a, b, &r))
+	if (o_mul(a, b, &r))
 		return;
 	termAt(FMT " * " FMT " = " FMT ", should overflow", a, b, r);
 }

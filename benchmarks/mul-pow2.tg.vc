@@ -37,17 +37,17 @@ static void step(void)
 	TYPE t = 0;
 
 	start();
-	o0 = overflow_mul(P0(4), P1(2), &r0);
-	o1 = overflow_mul(P0(MAX/4+1), P1(2), &r1);
-	o2 = overflow_mul(P0(MAX/8+1), P1(2), &r2);
-	o3 = overflow_mul(P0(2), P1(MAX/8+1), &r3);
-	o4 = overflow_mul(P0(4), P1(MAX/8+1), &r4);
-	o5 = overflow_mul(P0(8), P1(11), &r5);
-	o6 = overflow_mul(P0(16), P1(4), &r6);
-	o7 = overflow_mul(P0(4), P1(4), &r7);
+	o0 = o_mul(P0(4), P1(2), &r0);
+	o1 = o_mul(P0(MAX/4+1), P1(2), &r1);
+	o2 = o_mul(P0(MAX/8+1), P1(2), &r2);
+	o3 = o_mul(P0(2), P1(MAX/8+1), &r3);
+	o4 = o_mul(P0(4), P1(MAX/8+1), &r4);
+	o5 = o_mul(P0(8), P1(11), &r5);
+	o6 = o_mul(P0(16), P1(4), &r6);
+	o7 = o_mul(P0(4), P1(4), &r7);
 	// OVERFLOW TESTS
-	o8 = overflow_mul(P0(8), P1(MAX/4+1), &r8);
-	o9 = overflow_mul(P0(4), P1(MAX/2+1), &r9);
+	o8 = o_mul(P0(8), P1(MAX/4+1), &r8);
+	o9 = o_mul(P0(4), P1(MAX/2+1), &r9);
 
 	end();
 	if (!o0)
