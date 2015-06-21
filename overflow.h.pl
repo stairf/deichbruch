@@ -343,6 +343,7 @@ sub dump_common_macros {
 	#	endif
 	#
 	#	if __GNUC__ > 3 || (__GNUC__ == 3 && __GNUC_MINOR >= 1)
+	#		define overflow__have_attribute_always_inline 1
 	#		define overflow__have_builtin_types_compatible_p 1
 	#		define overflow__have_builtin_choose_expr 1
 	#		//
