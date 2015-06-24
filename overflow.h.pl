@@ -148,7 +148,7 @@ sub dump_common_macros {
 	my ($indent) = @_;
 	print_pp($indent, qq @
 	#if defined __clang__
-	#	if __clang_major__ < 3 || __clang_major__ == 3 && __clang_minor__ < 3
+	#	if __clang_major__ < 3 || (__clang_major__ == 3 && __clang_minor__ < 3)
 	#
 	#	// Old clang versions have a bug where __has_feature and similar CPP
 	#	// functions cause syntax errors. In consequence, using these macros
@@ -337,12 +337,12 @@ sub dump_common_macros {
 	#		define overflow__have_attribute_artificial 1
 	#	endif
 	#
-	#	if __GNUC__ > 3 || (__GNUC__ == 3 && __GNUC_MINOR >= 3)
+	#	if __GNUC__ > 3 || (__GNUC__ == 3 && __GNUC_MINOR__ >= 3)
 	#		define overflow__have_attribute_nonnull 1
 	#		define overflow__have_attribute_warn_unused_result 1
 	#	endif
 	#
-	#	if __GNUC__ > 3 || (__GNUC__ == 3 && __GNUC_MINOR >= 1)
+	#	if __GNUC__ > 3 || (__GNUC__ == 3 && __GNUC_MINOR__ >= 1)
 	#		define overflow__have_attribute_always_inline 1
 	#		define overflow__have_builtin_types_compatible_p 1
 	#		define overflow__have_builtin_choose_expr 1
@@ -353,7 +353,7 @@ sub dump_common_macros {
 	#		define overflow__have_builtin_constant_p 1
 	#	endif
 	#
-	#	if __GNUC__ > 2 || (__GNUC__ == 2 && __GNUC_MINOR >= 7)
+	#	if __GNUC__ > 2 || (__GNUC__ == 2 && __GNUC_MINOR__ >= 7)
 	#		define overflow__have_attribute_unused 1
 	#	endif
 	#
