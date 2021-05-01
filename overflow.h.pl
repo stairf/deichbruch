@@ -442,20 +442,20 @@ sub dump_custom_add {
 	if ($type->{signed}) {
 		print_code($indent, qq @
 		#		if (a >= 0)
-		#			flag = $type->{max} - a < b;
+		#			flag = (($type->{ctype}) (0 + $type->{max} - a)) < b;
 		#		else if (a < 0)
-		#			flag = $type->{min} - a > b;
+		#			flag = (($type->{ctype}) (0 + $type->{min} - a)) > b;
 		#	} else {
 		#		if (b >= 0)
-		#			flag = $type->{max} - b < a;
+		#			flag = (($type->{ctype}) (0 + $type->{max} - b)) < a;
 		#		else if (b < 0)
-		#			flag = $type->{min} - b > a;
+		#			flag = (($type->{ctype}) (0 + $type->{min} - b)) > a;
 		@);
 	} else {
 		print_code($indent, qq @
-		#		flag = $type->{max} - a < b;
+		#		flag = (($type->{ctype}) (0U + $type->{max} - a)) < b;
 		#	} else {
-		#		flag = $type->{max} - b < a;
+		#		flag = (($type->{ctype}) (0U + $type->{max} - b)) < a;
 		@);
 	}
 	print_code($indent, qq @
@@ -507,7 +507,7 @@ sub dump_custom_add {
 		#{
 		#	(void) a_is_const;
 		#	(void) b_is_const;
-		#	$type->{ctype} r1 = a + b;
+		#	$type->{ctype} r1 = ($type->{ctype}) (0U + a + b);
 		#	if (r1 < a)
 		#		return 1;
 		#	*r = r1;
@@ -522,7 +522,7 @@ sub dump_custom_add {
 		#{
 		#	(void) a_is_const;
 		#	(void) b_is_const;
-		#	$type->{ctype} lmask = $type->{max} / 2;
+		#	$type->{ctype} lmask = (($type->{ctype}) (1U * $type->{max} / 2));
 		#	$type->{ctype} hmask = ~lmask;
 		#	$type->{ctype} ah = a & hmask;
 		#	$type->{ctype} bh = b & hmask;
@@ -530,7 +530,7 @@ sub dump_custom_add {
 		#		return 1;
 		#	$type->{ctype} al = a & lmask;
 		#	$type->{ctype} bl = b & lmask;
-		#	$type->{ctype} c = al + bl;
+		#	$type->{ctype} c = ($type->{ctype}) (0U + al + bl);
 		#	$type->{ctype} ch = c & hmask;
 		#	$type->{ctype} oh = ah | bh;
 		#	if (oh & ch)
@@ -574,14 +574,14 @@ sub dump_custom_sub {
 		print_code($indent, qq @
 		#	if (a_is_const) {
 		#		if (a >= 0)
-		#			flag = b < a - $type->{max};
+		#			flag = b < (($type->{ctype}) (0 + a - $type->{max}));
 		#		else
-		#			flag = b > a - $type->{min};
+		#			flag = b > (($type->{ctype}) (0 + a - $type->{min}));
 		#	} else {
 		#		if (b >= 0)
-		#			flag = a < $type->{min} + b;
+		#			flag = a < (($type->{ctype}) (0 + $type->{min} + b));
 		#		else
-		#			flag = a > $type->{max} + b;
+		#			flag = a > (($type->{ctype}) (0 + $type->{max} + b));
 		#	}
 		@);
 	} else {
@@ -607,7 +607,7 @@ sub dump_custom_sub {
 		#{
 		#	(void) a_is_const;
 		#	(void) b_is_const;
-		#	$type->{ctype} r1 = a - b;
+		#	$type->{ctype} r1 = ($type->{ctype}) (0U + a - b);
 		#	if (r1 > a)
 		#		return 1;
 		#	*r = r1;
@@ -624,13 +624,13 @@ sub dump_custom_sub {
 			#{
 			#	(void) a_is_const;
 			#	(void) b_is_const;
-			#	$largetype->{ctype} a2 = a;
-			#	$largetype->{ctype} b2 = b;
-			#	a2 -= b2;
-			#	if (a2 < $type->{min} || a2 > $type->{max})
+			#	const $largetype->{ctype} a2 = a;
+			#	const $largetype->{ctype} b2 = b;
+			#	$largetype->{ctype} r2 = ($largetype->{ctype}) (0 + a2 - b2);
+			#	if (r2 < $type->{min} || r2 > $type->{max})
 			#		return 1;
-			#	overflow__assume(a2 == a - b);
-			#	*r = ($type->{ctype}) a2;
+			#	overflow__assume(r2 == a - b);
+			#	*r = ($type->{ctype}) r2;
 			#	return 0;
 			#}
 			@);
@@ -677,35 +677,35 @@ sub dump_custom_mul {
 		#	if (a_is_const) {
 		#		if (a > 0) {
 		#			if (b > 0)
-		#				flag = b > $type->{max} / a;
+		#				flag = b > (($type->{ctype}) (1 * $type->{max} / a));
 		#			else
-		#				flag = b < $type->{min} / a;
+		#				flag = b < (($type->{ctype}) (1 * $type->{min} / a));
 		#		} else {
 		#			if (b > 0)
-		#				flag = a < $type->{min} / b;
+		#				flag = a < (($type->{ctype}) (1 * $type->{min} / b));
 		#			else
-		#				flag = a && b < $type->{max} / a;
+		#				flag = a && b < (($type->{ctype}) (1 * $type->{max} / a));
 		#		}
 		#	} else {
 		#		if (a > 0) {
 		#			if (b > 0)
-		#				flag = a > $type->{max} / b;
+		#				flag = a > (($type->{ctype}) (1 * $type->{max} / b));
 		#			else
-		#				flag = b < $type->{min} / a;
+		#				flag = b < (($type->{ctype}) (1 * $type->{min} / a));
 		#		} else {
 		#			if (b > 0)
-		#				flag = a < $type->{min} / b;
+		#				flag = a < (($type->{ctype}) (1 * $type->{min} / b));
 		#			else
-		#				flag = b && a < $type->{max} / b;
+		#				flag = b && a < (($type->{ctype}) (1 * $type->{max} / b));
 		#		}
 		#	}
 		@);
 	} else {
 		print_code($indent, qq @
 		#	if (a_is_const) {
-		#		flag = a && b > $type->{max} / a;
+		#		flag = a && b > (($type->{ctype}) (1U * $type->{max} / a));
 		#	} else {
-		#		flag = b && a > $type->{max} / b;
+		#		flag = b && a > (($type->{ctype}) (1U * $type->{max} / b));
 		#	}
 		@);
 	}
@@ -727,16 +727,17 @@ sub dump_custom_mul {
 		#{
 		#	(void) a_is_const;
 		#	(void) b_is_const;
-		#	$largetype->{ctype} a2 = ($largetype->{ctype}) a;
-		#	$largetype->{ctype} b2 = ($largetype->{ctype}) b;
-		#	$largetype->{ctype} r2 = a2 * b2;
+		#	const $largetype->{ctype} a2 = ($largetype->{ctype}) a;
+		#	const $largetype->{ctype} b2 = ($largetype->{ctype}) b;
 		@);
 		if ($type->{signed}) {
 			print_code($indent, qq @
+			#	$largetype->{ctype} r2 = ($largetype->{ctype}) (1 * a2 * b2);
 			#	if (r2 > $type->{max} || r2 < $type->{min})
 			@);
 		} else {
 			print_code($indent, qq @
+			#	$largetype->{ctype} r2 = ($largetype->{ctype}) (1U * a2 * b2);
 			#	if (r2 & ~(($largetype->{ctype}) $type->{max})) /* r2 > $type->{max} */
 			@);
 		}
@@ -764,17 +765,17 @@ sub dump_custom_mul {
 		#	$type->{ctype} b_hi = (b >> shift) & lower_mask;
 		#	if(a_hi && b_hi)
 		#		return 1;
-		#	$type->{ctype} r1 = a_lo * b_lo;
-		#	$type->{ctype} r2 = a_lo * b_hi;
-		#	$type->{ctype} r3 = a_hi * b_lo;
-		#	r2 += r3;
+		#	$type->{ctype} r1 = ($type->{ctype}) (1U * a_lo * b_lo);
+		#	$type->{ctype} r2 = ($type->{ctype}) (1U * a_lo * b_hi);
+		#	$type->{ctype} r3 = ($type->{ctype}) (1U * a_hi * b_lo);
+		#	r2 = ($type->{ctype}) (0U + r2 + r3);
 		#	if (r2 & ~lower_mask) {
 		#		overflow__assume(a != 0 && b > $type->{max} / a);
 		#		overflow__assume(b != 0 && a > $type->{max} / b);
 		#		return 1;
 		#	}
 		#	r2 <<= shift;
-		#	if (r2 > $type->{max} - r1) {
+		#	if (r2 > (($type->{ctype}) (0U + $type->{max} - r1))) {
 		#		overflow__assume(a != 0 && b > $type->{max} / a);
 		#		overflow__assume(b != 0 && a > $type->{max} / b);
 		#		return 1;
@@ -797,10 +798,10 @@ sub dump_custom_mul {
 		#	}
 		#	$type->{ctype} r1 = a * b;
 		#	if (a_is_const) {
-		#		if (a && r1 / a != b)
+		#		if (a && (($type->{ctype}) (1U * r1 / a)) != b)
 		#			return 1;
 		#	} else {
-		#		if (b && r1 / b != a)
+		#		if (b && (($type->{ctype}) (1U * r1 / b)) != a)
 		#			return 1;
 		#	}
 		#	*r = r1;
