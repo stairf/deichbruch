@@ -87,7 +87,7 @@ my @strategies = (
 
 sub get_larger_types {
 	my ($type) = @_;
-	return grep { $_->{signed} == $type->{signed} and $_->{category} eq $type->{category} and $_->{size} > $type->{size} } @types;
+	return grep { $_->{signed} == $type->{signed} and $_->{category} eq $type->{category} and $_->{size} > $type->{size} or $_->{signed} == $type->{signed} and $_->{sfx} =~ /^[iu]$/} @types;
 }
 
 
@@ -417,11 +417,11 @@ sub dump_common_macros {
 
 	#define overflow__is_pow2(x) (!((x) & ((x)-1)))
 
-	#define overflow__is_fast_type(type) (sizeof(type) >= sizeof(int))
+	#define overflow__is_native_word_sized_type(type) (sizeof(type) == sizeof(void *))
 
-	#define overflow__add_suitable_largetype(lmax, max, lmin, min) (lmax-max >= max && lmin-min <= min)
-	#define overflow__sub_suitable_largetype(lmax, max, lmin, min) (lmax+min >= max && lmin+max <= min)
-	#define overflow__mul_suitable_largetype(lmax, max, lmin, min) (lmax/max >= max && lmin/max <= min && (!min || lmax/min <= min))
+	#define overflow__is_suitable_largetype_for_add(lmax, max, lmin, min) (lmax-max >= max && lmin-min <= min)
+	#define overflow__is_suitable_largetype_for_sub(lmax, max, lmin, min) (lmax+min >= max && lmin+max <= min)
+	#define overflow__is_suitable_largetype_for_mul(lmax, max, lmin, min) (lmax/max >= max && lmin/max <= min && (!min || lmax/min <= min))
 
 	#include <stdint.h>
 	#include <limits.h>
@@ -1001,9 +1001,28 @@ sub generate_largetype {
 		print "\n";
 		return;
 	}
+	# test if signed/unsigned int is a suitable largetype, as it is likely fast
+	if ($type->{category} ne "native") {
+		for my $largetype (grep {$_->{sfx} =~ /^[iu]$/ and $_->{signed} == $type->{signed}} @types) {
+			print_code($indent, qq @
+			#	if (overflow__is_suitable_largetype_for_$op->{name}($largetype->{max}, $type->{max}, $largetype->{min}, $type->{min}))
+			#		return overflow__$op->{name}_$type->{sfx}_strategy_largetype_$largetype->{sfx}(a, b, r, a_is_const, b_is_const);
+			@);
+		}
+	}
+	# test if the native word size is suitable, as it is likely fast
+	if ($type->{category} ne "native" or (grep {$_->{ctype} eq "long"} @types)[0]->{size} > $type->{size}) {
+		for my $largetype (get_larger_types($type)) {
+			print_code($indent, qq @
+			#	if (overflow__is_suitable_largetype_for_$op->{name}($largetype->{max}, $type->{max}, $largetype->{min}, $type->{min}) && overflow__is_native_word_sized_type($largetype->{ctype}))
+			#		return overflow__$op->{name}_$type->{sfx}_strategy_largetype_$largetype->{sfx}(a, b, r, a_is_const, b_is_const);
+			@);
+		}
+	}
+	# find the smallest suitable type
 	for my $largetype (get_larger_types($type)) {
 		print_code($indent, qq @
-		#	if (overflow__$op->{name}_suitable_largetype($largetype->{max}, $type->{max}, $largetype->{min}, $type->{min}) && overflow__is_fast_type($largetype->{ctype}))
+		#	if (overflow__is_suitable_largetype_for_$op->{name}($largetype->{max}, $type->{max}, $largetype->{min}, $type->{min}))
 		#		return overflow__$op->{name}_$type->{sfx}_strategy_largetype_$largetype->{sfx}(a, b, r, a_is_const, b_is_const);
 		@);
 	}
