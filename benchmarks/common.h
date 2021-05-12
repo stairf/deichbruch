@@ -31,9 +31,11 @@
 #ifndef __COMMON_H__
 #define __COMMON_H__
 
+// need abort() pre-included in overflow.x, not in .h
+#include <stdlib.h>
+
 #include "overflow.x"
 
-#include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>

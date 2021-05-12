@@ -49,11 +49,15 @@ target = sys.argv[1]
 proc = subprocess.Popen([ target ], stdout=subprocess.PIPE)
 raw_values = [float(l.rstrip()) for l in proc.stdout]
 proc.wait()
-if proc.returncode != 0:
-    exit(1)
+if proc.returncode < 0:
+    print("#exit signal "+str(-proc.returncode))
+    sys.exit(0)
+elif proc.returncode > 0:
+    print("#exit code "+str(proc.returncode))
+    sys.exit(0)
 
 values = remove_outliers(raw_values)
 
-print("%f %f %f\n"%(np.average(values), np.percentile(values, 5), np.percentile(values, 95)))
+print("%f %f %f"%(np.average(values), np.percentile(values, 5), np.percentile(values, 95)))
 
 
