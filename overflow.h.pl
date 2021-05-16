@@ -82,6 +82,7 @@ my @strategies = (
 	{ name => "largetype", impl => [ "sadd", "uadd", "smul", "umul", "ssub", 0      ] },
 	{ name => "postcheck", impl => [ 0,      "uadd", 0,      "umul", 0,      "usub" ] },
 	{ name => "partial",   impl => [ 0,      "uadd", 0,      "umul", 0,      0      ] },
+	{ name => "builtin",   impl => [ "sadd", "uadd", "smul", "umul", "ssub", "usub" ] },
 );
 
 
@@ -123,23 +124,40 @@ sub print_define {
 	print "\n\n";
 }
 
-sub dump_try_builtin {
-	my ($indent, $type, $opname) = @_;
-	if ($type->{category} ne "native") {
-		print_pp($indent, qq @
-		#if 1
-		#	// no compiler built-in available for overflow_${opname}_$type->{sfx}
-		@);
-		return;
-	}
-	my $asm = ($type->{signed} ? "s" : "u") . $opname . ($type->{sfx} =~ s/[ui]$//r);
-	print_pp($indent, qq @
-	#if !defined overflow__no_builtins && defined overflow__have_builtin_${asm}_overflow
-	#	define overflow_${opname}_$type->{sfx}(a, b, r) __builtin_${asm}_overflow((a), (b), (r))
+sub dump_builtin_strategy {
+	my ($indent, $op, $type) = @_;
+	my $asm = ($type->{signed} ? "s" : "u") . $op->{name} . ($type->{sfx} =~ s/[ui]//r);
+	print_code($indent, qq @
+	#overflow__function overflow__nonnull_arg(3) overflow__must_check
+	#int overflow__$op->{name}_$type->{sfx}_strategy_builtin(const $type->{ctype} a, const $type->{ctype} b, $type->{ctype} *const restrict r, const int a_is_const, const int b_is_const)
+	#{
 	@);
-	dump_prefixed_builtins($indent, $type, $opname);
+	print_pp($indent, qq @
+	#if defined overflow__have_builtin_$op->{name}_overflow
+	@);
+	print_code($indent, qq @
+	#	return __builtin_$op->{name}_overflow(a, b, r);
+	@);
+	print_pp($indent, qq @
+	#elif defined overflow__have_builtin_${asm}_overflow
+	@) if $type->{category} eq "native";
+	print_code($indent, qq @
+	#	return __builtin_${asm}_overflow(a, b, r);
+	@) if $type->{category} eq "native";
 	print_pp($indent, qq @
 	#else
+	@);
+	print_code($indent, qq @
+	#	abort();
+	@) if !$GENERATE_DEFAULT;
+	print_code($indent, qq @
+	#	return overflow__$op->{name}_$type->{sfx}_strategy_precheck(a, b, r, a_is_const, b_is_const);
+	@) if $GENERATE_DEFAULT;
+	print_pp($indent, qq @
+	#endif
+	@);
+	print_code($indent, qq @
+	#}
 	@);
 	print "\n";
 }
@@ -429,7 +447,7 @@ sub dump_common_macros {
 	print "\n";
 }
 
-sub dump_custom_add {
+sub dump_add_for_type {
 	my ($indent, $type) = @_;
 	print_code($indent, qq @
 	#overflow__function overflow__nonnull_arg(3) overflow__must_check
@@ -544,8 +562,9 @@ sub dump_custom_add {
 		print "\n";
 	}
 
-
 	my $op = (grep { $_->{name} eq "add" } @ops)[0];
+	dump_builtin_strategy($indent, $op, $type);
+
 	generate_largetype($indent, $type, $op);
 	for my $prefix (@prefixes) {
 		generate_default_strategy($indent, $prefix, $type, $op);
@@ -561,7 +580,7 @@ sub dump_custom_add {
 	print "\n";
 }
 
-sub dump_custom_sub {
+sub dump_sub_for_type {
 	my ($indent, $type) = @_;
 	print_code($indent, qq @
 	#overflow__function overflow__nonnull_arg(3) overflow__must_check
@@ -648,6 +667,8 @@ sub dump_custom_sub {
 	}
 
 	my $op = (grep { $_->{name} eq "sub" } @ops)[0];
+	dump_builtin_strategy($indent, $op, $type);
+
 	generate_largetype($indent, $type, $op) if $type->{signed};
 	for my $prefix (@prefixes) {
 		generate_default_strategy($indent, $prefix, $type, $op);
@@ -663,7 +684,7 @@ sub dump_custom_sub {
 	print "\n";
 }
 
-sub dump_custom_mul {
+sub dump_mul_for_type {
 	my ($indent, $type) = @_;
 	print_code($indent, qq @
 	#overflow__function overflow__nonnull_arg(3) overflow__must_check
@@ -812,6 +833,8 @@ sub dump_custom_mul {
 	}
 
 	my $op = (grep { $_->{name} eq "mul" } @ops)[0];
+	dump_builtin_strategy($indent, $op, $type);
+
 	generate_largetype($indent, $type, $op);
 	for my $prefix (@prefixes) {
 		generate_default_strategy($indent, $prefix, $type, $op);
@@ -824,46 +847,6 @@ sub dump_custom_mul {
 		#define overflow$p->{name}_mul_$type->{sfx}(a, b, r) overflow_$p->{name}_mul_$type->{sfx}_internal((a), (b), (r), overflow__constant(a), overflow__constant(b))
 		@);
 	}
-	print "\n";
-}
-
-sub dump_prefixed_builtins {
-	my ($indent, $type, $op) = @_;
-	for my $p (grep { $_->{name} } @prefixes) {
-		print_pp($indent, qq @
-		#	define overflow$p->{name}_${op}_$type->{sfx}(a, b, r) overflow_$p->{name}(overflow_${op}_$type->{sfx}((a), (b), (r)))
-
-		@);
-	}
-}
-
-sub dump_add_for_type {
-	my ($indent, $type) = @_;
-	dump_try_builtin($indent, $type, "add");
-	dump_custom_add($indent . "\t", $type);
-	print_pp($indent, qq @
-	#endif /* overflow_add_$type->{sfx} */
-	@);
-	print "\n";
-}
-
-sub dump_sub_for_type {
-	my ($indent, $type) = @_;
-	dump_try_builtin($indent, $type, "sub");
-	dump_custom_sub($indent . "\t", $type);
-	print_pp($indent, qq @
-	#endif /* overflow_sub_$type->{sfx} */
-	@);
-	print "\n";
-}
-
-sub dump_mul_for_type {
-	my ($indent, $type) = @_;
-	dump_try_builtin($indent, $type, "mul");
-	dump_custom_mul($indent . "\t", $type);
-	print_pp($indent, qq @
-	#endif /* overflow_mul_$type->{sfx} */
-	@);
 	print "\n";
 }
 
@@ -885,14 +868,7 @@ sub dump_mul {
 sub dump_generic {
 	my ($indent, $op) = @_;
 	print_pp($indent, qq @
-	#if !defined overflow__no_builtins && defined overflow__have_builtin_$op->{name}_overflow
-	@);
-	for my $prefix (@prefixes) {
-		my $expect = $prefix->{name} ? "overflow_$prefix->{name}" : "";
-		print_define($indent . "\t", "overflow$prefix->{name}_$op->{name}(a, b, r)", "$expect(__builtin_$op->{name}_overflow(a, b, r))");
-	}
-	print_pp($indent, qq @
-	#elif defined overflow__have_builtin_choose_expr && defined overflow__have_builtin_types_compatible_p && defined overflow__have_typeof
+	#if defined overflow__have_builtin_choose_expr && defined overflow__have_builtin_types_compatible_p && defined overflow__have_typeof
 	@);
 	for my $prefix (@prefixes) {
 		print_define($indent . "\t\t\t", "overflow$prefix->{name}_$op->{name}(a, b, r)",

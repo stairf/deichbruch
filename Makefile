@@ -62,7 +62,7 @@ PDIR = ./plots
 
 CC       = gcc
 LD       = gcc
-CFLAGS   = -std=c99 -I. -Doverflow__no_builtins -DOVERFLOW_LAZY_GENERIC
+CFLAGS   = -std=c99 -I. -DOVERFLOW_LAZY_GENERIC
 CFLAGS_B = -D_GNU_SOURCE
 CFLAGS_T = -ftrapv
 OPTIMIZE = -O3 -mtune=native -march=native
@@ -79,7 +79,7 @@ LATEX    = pdflatex </dev/null -interaction=nonstopmode
 CFLAGS  += $(OPTIMIZE) $(WARN)
 
 TGSFX = i u li lu lli llu i8 u8 i16 u16 i32 u32 i64 u64
-STRAT = precheck postcheck largetype partial
+STRAT = precheck postcheck largetype partial builtin
 VC    = cc cv vc vv
 
 TSRC := $(notdir $(wildcard $(TDIR:%=%/*.c)))
