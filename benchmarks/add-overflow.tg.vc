@@ -42,7 +42,7 @@ static void step(void)
 	o ^= o_add(P0(MAX), P1(MAX-7), &r3);
 	o ^= o_add(P0(MAX/2), P1(MAX/2+3), &r4);
 	o ^= o_add(P0(MAX/2+5), P1(MAX/2-1), &r5);
-#ifdef SIGNED
+#if (SIGNED)
 	o ^= o_add(P0(MIN), P1(-1), &r6);
 	o ^= o_add(P0(MIN+1), P1(-2), &r7);
 	o ^= o_add(P0(MIN), P1(MIN), &r8);

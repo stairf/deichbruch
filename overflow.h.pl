@@ -57,6 +57,7 @@ my @ops = (
 	{ name => "add", operator => "+" },
 	{ name => "sub", operator => "-" },
 	{ name => "mul", operator => "*", examine => [{ name => "pow2", macro => "is_pow2" }] },
+	{ name => "div", operator => "/" },
 );
 
 my @prefixes = (
@@ -78,11 +79,11 @@ for my $vc (@vc) {
 }
 
 my @strategies = (
-	{ name => "precheck",  impl => [ "sadd", "uadd", "smul", "umul", "ssub", "usub" ] },
-	{ name => "largetype", impl => [ "sadd", "uadd", "smul", "umul", "ssub", 0      ] },
-	{ name => "postcheck", impl => [ 0,      "uadd", 0,      "umul", 0,      "usub" ] },
-	{ name => "partial",   impl => [ 0,      "uadd", 0,      "umul", 0,      0      ] },
-	{ name => "builtin",   impl => [ "sadd", "uadd", "smul", "umul", "ssub", "usub" ] },
+	{ name => "precheck",  impl => [ "sadd", "uadd", "smul", "umul", "ssub", "usub", "sdiv", "udiv" ] },
+	{ name => "largetype", impl => [ "sadd", "uadd", "smul", "umul", "ssub", 0     , 0,      0      ] },
+	{ name => "postcheck", impl => [ 0,      "uadd", 0,      "umul", 0,      "usub", 0,      0      ] },
+	{ name => "partial",   impl => [ 0,      "uadd", 0,      "umul", 0,      0     , 0,      0      ] },
+	{ name => "builtin",   impl => [ "sadd", "uadd", "smul", "umul", "ssub", "usub", 0,      0      ] },
 );
 
 
@@ -850,6 +851,43 @@ sub dump_mul_for_type {
 	print "\n";
 }
 
+sub dump_div_for_type {
+	my ($indent, $type) = @_;
+	my $op = (grep { $_->{name} eq "div" } @ops)[0];
+
+	print_code($indent, qq @
+	#overflow__function overflow__nonnull_arg(3) overflow__must_check
+	#int overflow__div_$type->{sfx}_strategy_precheck(const $type->{ctype} a, const $type->{ctype} b, $type->{ctype} *const restrict r, const int a_is_const, const int b_is_const)
+	#{
+	#	if (b == 0)
+	#		return 1;
+	@);
+	if ($type->{signed}) {
+		print_code($indent, qq @
+		else if (($type->{min} < -$type->{max}) && (b == -1) && (a < -$type->{max}))
+			return 1;
+		@);
+	}
+	print_code($indent, qq @
+	#	*r = a / b;
+	#	return 0;
+	#}
+	@);
+
+	for my $prefix (@prefixes) {
+		generate_default_strategy($indent, $prefix, $type, $op);
+		generate_internal($indent, $prefix, $type, $op);
+	}
+	print "\n";
+
+	for my $p (@prefixes) {
+		print_pp($indent, qq @
+		#define overflow$p->{name}_div_$type->{sfx}(a, b, r) overflow_$p->{name}_div_$type->{sfx}_internal((a), (b), (r), overflow__constant(a), overflow__constant(b))
+		@);
+	}
+	print "\n";
+}
+
 sub dump_add {
 	my ($indent) = @_;
 	dump_add_for_type($indent, $_) for (@types)
@@ -863,6 +901,11 @@ sub dump_sub {
 sub dump_mul {
 	my ($indent) = @_;
 	dump_mul_for_type($indent, $_) for (@types);
+}
+
+sub dump_div {
+	my ($indent) = @_;
+	dump_div_for_type($indent, $_) for (@types);
 }
 
 sub dump_generic {
@@ -1085,6 +1128,7 @@ sub dump_file_body {
 	dump_add($indent);
 	dump_sub($indent);
 	dump_mul($indent);
+	dump_div($indent);
 	dump_generic($indent, $_) for @ops;
 
 	print "\n";

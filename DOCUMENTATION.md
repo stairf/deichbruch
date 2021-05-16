@@ -31,6 +31,12 @@ Usage
 
 	bool overflow_unlikely_mul(TYPE a, TYPE b, TYPE *r);
 
+	bool overflow_div(TYPE a, TYPE b, TYPE *r);
+
+	bool overflow_likely_div(TYPE a, TYPE b, TYPE *r);
+
+	bool overflow_unlikely_div(TYPE a, TYPE b, TYPE *r);
+
 	bool overflow_add_i(int a, int b, int *r);
 
 	bool overflow_add_li(long a, long b, long *r);
@@ -282,6 +288,90 @@ Usage
 	bool overflow_unlikely_mul_i64(int64_t a, int64_t b, int64_t *r);
 
 	bool overflow_unlikely_mul_u64(uint64_t a, uint64_t b, uint64_t *r);
+
+	bool overflow_div_i(int a, int b, int *r);
+
+	bool overflow_div_li(long a, long b, long *r);
+
+	bool overflow_div_lli(long long a, long long b, long long *r);
+
+	bool overflow_div_u(unsigned int a, unsigned int b, unsigned int *r);
+
+	bool overflow_div_lu(unsigned long a, unsigned long b, unsigned long *r);
+
+	bool overflow_div_llu(unsigned long long a, unsigned long long b, unsigned long long *r);
+
+	bool overflow_div_i8(int8_t a, int8_t b, int8_t *r);
+
+	bool overflow_div_u8(uint8_t a, uint8_t b, uint8_t *r);
+
+	bool overflow_div_i16(int16_t a, int16_t b, int16_t *r);
+
+	bool overflow_div_u16(uint16_t a, uint16_t b, uint16_t *r);
+
+	bool overflow_div_i32(int32_t a, int32_t b, int32_t *r);
+
+	bool overflow_div_u32(uint32_t a, uint32_t b, uint32_t *r);
+
+	bool overflow_div_i64(int64_t a, int64_t b, int64_t *r);
+
+	bool overflow_div_u64(uint64_t a, uint64_t b, uint64_t *r);
+
+	bool overflow_likely_div_i(int a, int b, int *r);
+
+	bool overflow_likely_div_li(long a, long b, long *r);
+
+	bool overflow_likely_div_lli(long long a, long long b, long long *r);
+
+	bool overflow_likely_div_u(unsigned int a, unsigned int b, unsigned int *r);
+
+	bool overflow_likely_div_lu(unsigned long a, unsigned long b, unsigned long *r);
+
+	bool overflow_likely_div_llu(unsigned long long a, unsigned long long b, unsigned long long *r);
+
+	bool overflow_likely_div_i8(int8_t a, int8_t b, int8_t *r);
+
+	bool overflow_likely_div_u8(uint8_t a, uint8_t b, uint8_t *r);
+
+	bool overflow_likely_div_i16(int16_t a, int16_t b, int16_t *r);
+
+	bool overflow_likely_div_u16(uint16_t a, uint16_t b, uint16_t *r);
+
+	bool overflow_likely_div_i32(int32_t a, int32_t b, int32_t *r);
+
+	bool overflow_likely_div_u32(uint32_t a, uint32_t b, uint32_t *r);
+
+	bool overflow_likely_div_i64(int64_t a, int64_t b, int64_t *r);
+
+	bool overflow_likely_div_u64(uint64_t a, uint64_t b, uint64_t *r);
+
+	bool overflow_unlikely_div_i(int a, int b, int *r);
+
+	bool overflow_unlikely_div_li(long a, long b, long *r);
+
+	bool overflow_unlikely_div_lli(long long a, long long b, long long *r);
+
+	bool overflow_unlikely_div_u(unsigned int a, unsigned int b, unsigned int *r);
+
+	bool overflow_unlikely_div_lu(unsigned long a, unsigned long b, unsigned long *r);
+
+	bool overflow_unlikely_div_llu(unsigned long long a, unsigned long long b, unsigned long long *r);
+
+	bool overflow_unlikely_div_i8(int8_t a, int8_t b, int8_t *r);
+
+	bool overflow_unlikely_div_u8(uint8_t a, uint8_t b, uint8_t *r);
+
+	bool overflow_unlikely_div_i16(int16_t a, int16_t b, int16_t *r);
+
+	bool overflow_unlikely_div_u16(uint16_t a, uint16_t b, uint16_t *r);
+
+	bool overflow_unlikely_div_i32(int32_t a, int32_t b, int32_t *r);
+
+	bool overflow_unlikely_div_u32(uint32_t a, uint32_t b, uint32_t *r);
+
+	bool overflow_unlikely_div_i64(int64_t a, int64_t b, int64_t *r);
+
+	bool overflow_unlikely_div_u64(uint64_t a, uint64_t b, uint64_t *r);
 
 
 Description

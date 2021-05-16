@@ -1,5 +1,5 @@
 /*****
- * Copyright (c) 2015, Stefan Reif
+ * Copyright (c) 2021, Stefan Reif
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
@@ -26,36 +26,45 @@
  *****/
 
 /*
- * sub-overflow.tg.vc
+ * div.tg.vc
  */
 #include "common.h"
 
 static void step(void)
 {
 	TYPE r0, r1, r2, r3, r4, r5, r6, r7, r8, r9;
-	int o = 0;
+	int  o0, o1, o2, o3, o4, o5, o6, o7, o8, o9;
+	TYPE t = 0;
 
 	start();
-	o ^= o_sub(P0(MIN), P1(2), &r0);
-	o ^= o_sub(P0(MIN+2), P1(3), &r1);
-	o ^= o_sub(P0(MIN+5), P1(MAX), &r2);
-	o ^= o_sub(P0(MIN), P1(MAX-7), &r3);
-	o ^= o_sub(P0(MIN/2), P1(MAX/2+5), &r4);
-	o ^= o_sub(P0(MIN/2-5), P1(MAX/2+1), &r5);
+	o0 = o_div(P0(4), P1(2), &r0);
+	o1 = o_div(P0(127), P1(5), &r1);
+	o2 = o_div(P0(MAX), P1(MAX/16), &r2);
+	o3 = o_div(P0(MAX), P1(MAX/32), &r3);
+	o4 = o_div(P0(MIN), P1(MAX/16), &r4);
+	o5 = o_div(P0(MIN), P1(MAX/32), &r5);
+	o6 = o_div(P0(MAX), P1(MAX-127), &r6);
 #if (SIGNED)
-	o ^= o_sub(P0(-1), P1(MAX), &r6);
-	o ^= o_sub(P0(-2), P1(MAX-1), &r7);
-	o ^= o_sub(P0(-1), P1(MAX/2), &r8);
-	o ^= o_sub(P0(-5), P1(MAX/2), &r9);
+	o7 = o_add(P0(MIN), P1(-5), &r7);
+	o8 = o_add(P0(MIN), P1(-7), &r8);
+	o9 = o_add(P0(MAX), P1(MIN/2), &r9);
 #else
-	o ^= o_sub(P0(MAX-1), P1(MAX), &r6);
-	o ^= o_sub(P0(MAX-2), P1(MAX-1), &r7);
-	o ^= o_sub(P0(1), P1(MAX), &r8);
-	o ^= o_sub(P0(0), P1(MAX-1), &r9);
+	o7 = o_add(P0(MAX), P1(37), &r7);
+	o8 = o_add(P0(MAX), P1(MAX/16-1), &r8);
+	o9 = o_add(P0(MAX), P1(MAX/32+1), &r9);
 #endif
 	end();
 
-	effect(o);
-
+	if (!o0) t ^= r0;
+	if (!o1) t ^= r1;
+	if (!o2) t ^= r2;
+	if (!o3) t ^= r3;
+	if (!o4) t ^= r4;
+	if (!o5) t ^= r5;
+	if (!o6) t ^= r6;
+	if (!o7) t ^= r7;
+	if (!o8) t ^= r8;
+	if (!o9) t ^= r9;
+	effect(t);
 }
 

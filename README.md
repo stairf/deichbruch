@@ -36,6 +36,8 @@ macros are suitable for most occasions:
 
 	bool overflow_mul(TYPE a, TYPE b, TYPE *r);
 
+	bool overflow_div(TYPE a, TYPE b, TYPE *r);
+
 Be sure that both `a` and `b` have the same type, and `r` is a pointer to that
 type. On overflow, these functions return `true` and the content of `*r` is
 undefined. On success, the return value is `false` and the result of the

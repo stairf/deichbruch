@@ -57,6 +57,7 @@ my @ops = (
 	{ name => "add", operator => "+" },
 	{ name => "sub", operator => "-" },
 	{ name => "mul", operator => "*" },
+	{ name => "div", operator => "/" },
 );
 
 my $tgfile = $ARGV[0] or die "usage: $0 <file.tg>";

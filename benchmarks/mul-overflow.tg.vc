@@ -42,7 +42,7 @@ static void step(void)
 	o ^= o_mul(P0(7), P1(MAX/6), &r3);
 	o ^= o_mul(P0(8), P1(MAX/7), &r4);
 	o ^= o_mul(P0(9), P1(MAX/8), &r5);
-#ifdef SIGNED
+#if (SIGNED)
 	o ^= o_mul(P0(MIN), P1(2), &r6);
 	o ^= o_mul(P0(MIN+1), P1(3), &r7);
 	o ^= o_mul(P0(MIN/2), P1(4), &r8);

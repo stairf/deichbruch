@@ -42,7 +42,7 @@ static void step(void)
 	o2 = o_sub(P0(MAX/2), P1(MAX/2), &r2);
 	o3 = o_sub(P0(MAX/7), P1(MAX/9), &r3);
 	o4 = o_sub(P0(MAX), P1(MAX-1), &r4);
-#ifdef SIGNED
+#if (SIGNED)
 	o5 = o_sub(P0(MIN), P1(-1), &r5);
 	o6 = o_sub(P0(0), P1(MAX), &r6);
 	o7 = o_sub(P0(1), P1(MAX-1), &r7);
