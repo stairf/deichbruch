@@ -288,7 +288,7 @@ DATA = $(BBIN:%-bin=%.data)
 data: $(DATA)
 $(DATA): %.data: %-bin
 	@echo "EVAL      $<"
-	$Q ./scripts/eval.sh $< > $@
+	$Q ./scripts/eval.py $< > $@
 
 
 overflow.h: $(DATA)

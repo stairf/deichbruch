@@ -1,7 +1,8 @@
-#!/bin/sh
+#!/usr/bin/env python
+# coding: utf-8
 
 #
-# Copyright (c) 2015, Stefan Reif
+# Copyright (c) 2021, Stefan Reif
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without modification,
@@ -26,53 +27,37 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
-die() {
-	echo "$@" >&2
-	exit 1
-}
+import numpy as np
+import subprocess
+import sys
 
-[ "$1" ] || die "usage: $0 <program>"
+def die(msg):
+    print(msg)
+    sys.exit(1)
 
-BIN="$1"
+def remove_outliers(values, dist=3):
+    avg = np.average(values)
+    return [v for v in values if v < dist * avg]
 
-EXPR="scale=10;(0"
-VALUES=""
-NRUN=20
-i=0
+self = sys.argv[0]
 
-while [ $i -lt $NRUN ]; do
-	printf "%d\r" $i >&2
-	OUT=$( $BIN )
-	EXPR="$EXPR+$OUT"
-	VALUES="$VALUES $OUT"
-	i=$((i+1))
-done
+if len(sys.argv) != 2:
+    die("usage: "+self+" <target>")
 
-EXPR="$EXPR)/$NRUN"
-AVG="$(echo $EXPR | bc)"
+target = sys.argv[1]
 
-EXPR="scale=10;(0"
-MIN=""
-MAX="0"
-for V in $VALUES; do
-	V=$(echo "scale=10; if ( $V>3*$AVG ) 0 else $V" | bc)
-	if [ "$V" -eq 0 ]; then
-		NRUN=$((NRUN-1))
-	else
-		if [ "$V" -gt "$MAX" ]; then
-			MAX="$V"
-		elif [ -z "$MIN" -o "0$V" -lt "0$MIN" ]; then
-			MIN="$V"
-		fi
-		EXPR="$EXPR+$V"
-	fi
-done
+proc = subprocess.Popen([ target ], stdout=subprocess.PIPE)
+raw_values = [float(l.rstrip()) for l in proc.stdout]
+proc.wait()
+if proc.returncode < 0:
+    print("#exit signal "+str(-proc.returncode))
+    sys.exit(0)
+elif proc.returncode > 0:
+    print("#exit code "+str(proc.returncode))
+    sys.exit(0)
 
-EXPR="$EXPR)/$NRUN"
-#echo >&2 "$EXPR"
-AVG=$(echo $EXPR | bc)
+values = remove_outliers(raw_values)
 
-
-printf "%s %s %s\n" "$AVG" "$MIN" "$MAX"
+print("%f %f %f"%(np.average(values), np.percentile(values, 5), np.percentile(values, 95)))
 
 

@@ -31,16 +31,23 @@
 #ifndef __COMMON_H__
 #define __COMMON_H__
 
+// need abort() pre-included in overflow.x, not in .h
+#include <stdlib.h>
+
 #include "overflow.x"
 
-#include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
 #include <unistd.h>
 #include <sched.h>
+#include <time.h>
 
-#define N_RUN 10000
+#define DURATION_MS           50
+#define ITERATIONS_PER_SAMPLE 1000
+
+#define NANOSECONDS_PER_SECOND      1000000000
+#define NANOSECONDS_PER_MILLISECOND 1000000
 
 #define dieX(file,line,func,...) do { \
 		fprintf(stderr, "%s:%u:%s(): error: ", file, line, func); \
@@ -104,17 +111,17 @@ static inline void cpu_relax(void)
 	sched_yield();
 }
 
-static uint64_t time;
+static uint64_t start_time;
 static uint64_t total_time;
 
 #define start() do{ \
 		uint64_t _start__now = now(); \
-		time = _start__now; \
+		start_time = _start__now; \
 	} while (0)
 
 #define end() do {\
 		uint64_t _end__now = now(); \
-		uint64_t _end__delta = _end__now - time; \
+		uint64_t _end__delta = _end__now - start_time; \
 		total_time += _end__delta; \
 	} while (0)
 
@@ -127,14 +134,43 @@ extern int nothing(void);
 
 static void step(void);
 
+static int terminating(void)
+{
+	static struct timespec bench_end;
+	struct timespec bench_now;
+	if (!bench_end.tv_sec && !bench_end.tv_nsec) {
+		clock_gettime(CLOCK_MONOTONIC, &bench_end);
+
+		bench_end.tv_sec +=  (DURATION_MS * NANOSECONDS_PER_MILLISECOND) / NANOSECONDS_PER_SECOND;
+		bench_end.tv_nsec += (DURATION_MS * NANOSECONDS_PER_MILLISECOND) % NANOSECONDS_PER_SECOND;
+		while (bench_end.tv_nsec >= NANOSECONDS_PER_SECOND) {
+			bench_end.tv_sec++;
+			bench_end.tv_nsec -= NANOSECONDS_PER_SECOND;
+		}
+		return 0;
+	}
+	clock_gettime(CLOCK_MONOTONIC, &bench_now);
+
+	// check seconds
+	if (bench_now.tv_sec > bench_end.tv_sec)
+		return 1;
+	if (bench_now.tv_sec < bench_end.tv_sec)
+		return 0;
+	// same second, check nanoseconds
+	if (bench_now.tv_nsec > bench_end.tv_nsec)
+		return 1;
+	return 0;
+}
+
 int main(int argc, char **argv)
 {
 	cpu_pin();
-	for (int i = 0; i < N_RUN; ++i) {
-		step();
-		cpu_relax();
+	while (!terminating()) {
+		total_time = 0;
+		for (size_t i = 0; i < ITERATIONS_PER_SAMPLE; i++)
+			step();
+		printf("%llu\n", (unsigned long long) total_time);
 	}
-	printf("%llu\n", (unsigned long long) total_time);
 
 	return 0;
 }

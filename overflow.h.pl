@@ -917,6 +917,7 @@ sub read_eval_data {
 	defined $line or die "failed to read $filename: $!\n";
 	my ($avg, $min, $max) = split /[ ]+/, $line;
 	close $in;
+	return undef if ($line =~ /^#/);
 	return ($avg, $min, $max);
 }
 
@@ -938,9 +939,11 @@ sub find_best_strategy {
 		my $ofilename = "benchmarks/...$vc->{name}-$op->{name}-overflow-$type->{sfx}-$s.data";
 		my ($avg, $min, $max) = read_eval_data($filename);
 		my ($oavg, $omin, $omax) = read_eval_data($ofilename);
+		next if !defined $avg or !defined $oavg;
 		$data{$s} = $avg * $w[0] + $min * $w[1] + $max * $w[2] + $oavg * $w[3] + $omin * $w[4] + $omax * $w[5];
 	}
 	my $best = (sort { $data{$a} <=> $data{$b} } keys %data)[0];
+	die "all strategies failed for type=$type->{sfx} ($type->{ctype}) op=$op->{name} vc=$vc->{name} examine=$examinename" if !defined $best;
 	return $best;
 }
 
@@ -1030,6 +1033,11 @@ sub generate_largetype {
 	print_code($indent, qq @
 	#	/* precheck is always possible, use that as fallback */
 	#	return overflow__$op->{name}_$type->{sfx}_strategy_precheck(a, b, r, a_is_const, b_is_const);
+	@) if $GENERATE_DEFAULT;
+	print_code($indent, qq @
+	#	abort();
+	@) if !$GENERATE_DEFAULT;
+	print_code($indent, qq @
 	#}
 	@);
 	print "\n";
@@ -1047,20 +1055,22 @@ sub generate_internal {
 	@);
 	for my $strat (@strategies) {
 		next if !strategy_implemented($type, $op, $strat);
-		my $s = $strat->{name};
 		print_pp($indent, qq @
-		#	elif defined overflow__strategy_$s
+		#	elif defined overflow__strategy_$strat->{name}
 		@);
-			print_code($indent, qq @
-			#		return overflow__$op->{name}_$type->{sfx}_strategy_$s(a, b, r, a_is_const, b_is_const);
-			@);
+		print_code($indent, qq @
+		#		return overflow__$op->{name}_$type->{sfx}_strategy_$strat->{name}(a, b, r, a_is_const, b_is_const);
+		@);
 	}
 	print_pp($indent, qq @
 	#	else
 	@);
 	print_code($indent, qq @
 	#		return overflow_$prefix->{name}_$op->{name}_$type->{sfx}_strategy_default(a, b, r, a_is_const, b_is_const);
-	@);
+	@) if $GENERATE_DEFAULT;
+	print_code($indent, qq @
+	#		abort();
+	@) if !$GENERATE_DEFAULT;
 	print_pp($indent, qq @
 	#	endif
 	@);
