@@ -31,7 +31,7 @@
 #ifndef __COMMON_H__
 #define __COMMON_H__
 
-#include "overflow.x"
+#include "overflow.h"
 
 #include <stdlib.h>
 #include <stdio.h>
